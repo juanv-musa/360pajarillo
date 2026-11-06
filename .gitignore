@@ -1,0 +1,7 @@
+# Certificados locales SSL
+cert.pem
+key.pem
+
+# Sistema
+.DS_Store
+node_modules/

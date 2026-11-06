@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Sierra Mágina 360 · Visor de Cumbres</title>
+
+  <link rel="stylesheet" href="./css/vr-360.css">
+
+  <!-- A-Frame WebXR Engine (v1.6.0) -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+  <!-- Lógica y Base de Datos -->
+  <script src="./js/hotspots-data.js"></script>
+  <script src="./js/app-360.js"></script>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       BARRA SUPERIOR (MUSEUM HUD)
+       ========================================================================== -->
+  <header class="museum-hud" id="museum-hud">
+    <div class="hud-brand">
+      <img src="./assets/images/logo-pajarillo.png" alt="Santuario de El Pajarillo" class="logo-centro" onerror="this.style.display='none'">
+      <img src="./assets/images/logos/05-ayuntamiento-huelma.png" alt="Ayuntamiento de Huelma" class="logo-ayto" onerror="this.style.display='none'">
+      <div class="hud-divider"></div>
+      <div class="hud-title-wrap">
+        <span class="hud-title">Sierra Mágina 360°</span>
+        <span class="hud-sub" id="hud-current-scene">Cumbre de Pico Mágina · 2.167 m</span>
+      </div>
+    </div>
+
+    <!-- Pestañas de Cambio de Panorámica -->
+    <div class="scene-tabs">
+      <button class="btn-scene-tab active" data-scene="magina" onclick="window.switchScene('magina')">
+        ⛰️ Pico Mágina (2.167 m)
+      </button>
+      <button class="btn-scene-tab" data-scene="miramundos" onclick="window.switchScene('miramundos')">
+        🏔️ Refugio Miramundos (2.077 m)
+      </button>
+    </div>
+
+    <div class="hud-actions">
+      <button class="btn-hud" id="btn-calibrator" onclick="window.toggleCalibrationMode()">Modo Calibrador</button>
+      <button class="btn-hud-vr" onclick="document.querySelector('a-scene').enterVR()">Entrar en VR</button>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       TARJETA DE INFORMACIÓN INFERIOR LIMPIA (SIN PROMINENCIA)
+       ========================================================================== -->
+  <div class="peak-info-card" id="peak-info-card">
+    <div class="card-header">
+      <span class="card-category">CUMBRE DESTACADA</span>
+      <button class="btn-close-card" onclick="window.closePeakCard()">✕</button>
+    </div>
+
+    <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px;">
+      <h2 class="card-title" id="card-peak-title" style="margin: 0;">Almadén</h2>
+      <span class="card-badge-alt" id="card-peak-elev" style="background:#00C4D6; color:#0A1618; font-weight:bold; padding:2px 10px; border-radius:12px; font-size:0.9rem;">2.077 m</span>
+    </div>
+
+    <p class="card-desc" id="card-peak-desc">
+      Descripción de la cumbre...
+    </p>
+
+    <div class="card-actions">
+      <button class="btn-center-peak" onclick="window.lookAtSelectedPeak()">👁️ Centrar Vista en el Pico</button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       CARRUSEL INFERIOR DE CUMBRES (TIRA HORIZONTAL)
+       ========================================================================== -->
+  <div class="peak-strip-container" id="peak-strip"></div>
+
+  <!-- ==========================================================================
+       MODAL DE INICIO
+       ========================================================================== -->
+  <div class="welcome-overlay" id="welcome-modal">
+    <div class="welcome-card">
+      <span class="eyebrow">Centro de Interpretación · Huelma</span>
+      <h1>Visor Panorámico de Cumbres 360°</h1>
+      <p>
+        Identifica en tiempo real los picos y sierras del horizonte de Sierra Mágina con etiquetas en la cima y fichas explicativas.
+      </p>
+
+      <button class="btn-start" onclick="window.startExperience()">
+        Comenzar Exploración
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       CALIBRADOR VISUAL (Herramienta para fijar cumbres)
+       ========================================================================== -->
+  <div class="calibrator-reticle" id="calibrator-reticle"></div>
+
+  <div class="calibrator-panel" id="calibrator-panel">
+    <div class="calibrator-title">📍 Herramienta de Fijación de Cumbres</div>
+    <div style="margin: 6px 0; font-size: 0.85rem;">
+      <div>Apuntando a:</div>
+      <div>Horizontal: <strong id="calib-yaw" style="color: #00C4D6;">0°</strong> | Vertical: <strong id="calib-pitch" style="color: #00C4D6;">0°</strong></div>
+    </div>
+    <div style="font-size: 0.72rem; color: #BBB; margin-bottom: 10px;">
+      Gira la pantalla hasta que la cruz apunte a la cumbre y pulsa para fijar el cartel.
+    </div>
+    <button class="btn-calib-action" onclick="window.addHotspotAtCurrentView()">➕ Fijar Cumbre Aquí</button>
+    <button class="btn-calib-reset" style="margin-top: 6px;" onclick="window.clearAllHotspots()">🗑️ Borrar Todo y Dejar en Blanco</button>
+    <div class="calib-list-box">
+      <div style="font-weight:bold; color:#00C4D6; margin-bottom:4px; font-size:0.75rem;">Cumbres en esta panorámica:</div>
+      <div id="calibrator-hotspots-list"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       ESCENA 3D WEBXR
+       ========================================================================== -->
+  <a-scene 
+    renderer="antialias: true; colorManagement: true; highRefreshRate: true;"
+    webxr="referenceSpaceType: local-floor; requiredFeatures: local-floor;"
+    vr-mode-ui="enabled: false"
+    loading-screen="dotsColor: #00C4D6; backgroundColor: #050806">
+
+    <!-- Cursor de ratón universal para pantalla de escritorio (Mac / PC) -->
+    <a-entity id="mouse-cursor" 
+              cursor="rayOrigin: mouse" 
+              raycaster="objects: .clickable; interval: 50"></a-entity>
+
+    <a-entity id="camera-rig" position="0 1.6 0">
+      <a-camera id="head-camera" look-controls="reverseMouseDrag: false" wasd-controls="enabled: false">
+        <!-- Cursor de mirada (Gaze) para cascos VR sin mandos o VR móvil -->
+        <a-entity id="gaze-cursor"
+                  cursor="fuse: true; fuseTimeout: 1200"
+                  position="0 0 -1.2"
+                  geometry="primitive: ring; radiusInner: 0.016; radiusOuter: 0.024"
+                  material="color: #00C4D6; shader: flat; opacity: 0.85; transparent: true"
+                  raycaster="objects: .clickable"
+                  visible="false">
+          <a-circle radius="0.005" material="color: #FFFFFF; shader: flat"></a-circle>
+        </a-entity>
+      </a-camera>
+
+      <!-- Punteros láser para Meta Quest (Touch Plus Controllers) -->
+      <a-entity laser-controls="hand: right" raycaster="objects: .clickable; lineColor: #00C4D6; lineOpacity: 0.8"></a-entity>
+      <a-entity laser-controls="hand: left" raycaster="objects: .clickable; lineColor: #00C4D6; lineOpacity: 0.8"></a-entity>
+    </a-entity>
+
+    <a-sky id="sky-360" 
+           src="assets/images/foto_360_magina.jpg" 
+           rotation="0 0 0" 
+           radius="30"></a-sky>
+
+    <a-entity id="hotspots-container" position="0 1.6 0"></a-entity>
+
+    <a-sphere id="fade-overlay" radius="0.3" position="0 1.6 0"
+              material="color: #000000; shader: flat; opacity: 0; side: back; transparent: true"></a-sphere>
+
+    <a-light type="ambient" color="#FFFFFF" intensity="1.0"></a-light>
+  </a-scene>
+
+</body>
+</html>
