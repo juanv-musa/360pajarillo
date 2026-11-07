@@ -158,14 +158,15 @@ body, html {
 }
 
 .welcome-card {
-  max-width: 540px;
-  width: 100%;
+  max-width: 620px;
+  width: 95%;
   background: linear-gradient(160deg, rgba(22, 34, 26, 0.95) 0%, rgba(12, 20, 15, 0.98) 100%);
   border: 1px solid rgba(212, 175, 55, 0.4);
   border-radius: 20px;
-  padding: 34px 28px;
+  padding: 30px 24px 22px;
   text-align: center;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  box-sizing: border-box;
 }
 
 .welcome-card h1 {
@@ -260,33 +261,41 @@ body, html {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.7));
 }
 
-/* Banda de Financiación Institucional (Europa, Hacienda, Junta, Huelma) */
+/* Banda de Financiación Institucional (Europa, Hacienda, Fondos Europeos, Junta, Huelma) */
 .welcome-footer-funding {
-  margin-top: 24px;
-  padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 14px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  margin-top: 22px;
+  padding: 10px 14px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .welcome-funding-grid {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 14px 22px;
+  justify-content: space-between;
+  flex-direction: row;
+  flex-wrap: nowrap !important; /* Estrictamente todos en una sola línea */
+  gap: 10px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .welcome-funding-grid .funding-item {
   height: 30px;
+  max-height: 30px;
   width: auto;
-  max-width: 115px;
+  flex: 1 1 0;
+  max-width: 19%;
+  min-width: 0;
   object-fit: contain;
   transition: transform 0.2s ease, opacity 0.2s ease;
+  display: block;
 }
 
 .welcome-funding-grid .funding-item:hover {
@@ -295,8 +304,9 @@ body, html {
 
 @media (max-width: 600px) {
   .welcome-card {
-    padding: 24px 16px;
-    max-width: 92%;
+    padding: 22px 14px 16px;
+    max-width: 96%;
+    width: 96%;
   }
   .welcome-brand-top {
     gap: 14px;
@@ -305,12 +315,48 @@ body, html {
   .welcome-logo-pajarillo, .welcome-logo-ayto {
     height: 38px;
   }
+  .welcome-card h1 {
+    font-size: 1.35rem;
+  }
+  .welcome-card p {
+    font-size: 0.88rem;
+    margin-bottom: 16px;
+  }
+  .btn-start {
+    padding: 12px;
+    font-size: 0.98rem;
+  }
+  .welcome-footer-funding {
+    margin-top: 16px;
+    padding: 8px 6px;
+    border-radius: 10px;
+  }
   .welcome-funding-grid {
-    gap: 10px 14px;
+    flex-wrap: nowrap !important;
+    gap: 5px;
   }
   .welcome-funding-grid .funding-item {
-    height: 22px;
-    max-width: 85px;
+    height: 20px;
+    max-height: 20px;
+    max-width: 19%;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .welcome-card {
+    padding: 18px 10px 14px;
+  }
+  .welcome-footer-funding {
+    padding: 6px 4px;
+  }
+  .welcome-funding-grid {
+    gap: 3px;
+  }
+  .welcome-funding-grid .funding-item {
+    height: 16px;
+    max-height: 16px;
   }
 }
 
