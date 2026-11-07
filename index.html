@@ -75,10 +75,16 @@
   <div class="peak-strip-container" id="peak-strip"></div>
 
   <!-- ==========================================================================
-       MODAL DE INICIO
+       MODAL DE INICIO (PORTADA)
        ========================================================================== -->
   <div class="welcome-overlay" id="welcome-modal">
     <div class="welcome-card">
+      <!-- Cabecera Institucional con Logotipos en Blanco -->
+      <div class="welcome-brand-top">
+        <img src="./assets/images/logo-pajarillo-white.png" alt="Santuario de El Pajarillo" class="welcome-logo-pajarillo" onerror="this.src='./assets/images/logo-pajarillo-white.svg'">
+        <img src="./assets/images/logo-ayuntamiento-huelma-white.png" alt="Ayuntamiento de Huelma" class="welcome-logo-ayto">
+      </div>
+
       <span class="eyebrow">Centro de Interpretación · Huelma</span>
       <h1>Visor Panorámico de Cumbres 360°</h1>
       <p>
@@ -88,6 +94,17 @@
       <button class="btn-start" onclick="window.startExperience()">
         Comenzar Exploración
       </button>
+
+      <!-- Banda de Cofinanciación Institucional Oficial (Europa, Hacienda, Fondos Europeos, Junta, Huelma) -->
+      <div class="welcome-footer-funding">
+        <div class="welcome-funding-grid">
+          <img src="./assets/images/logos/01-union-europea.png" alt="Cofinanciado por la Unión Europea" class="funding-item" loading="lazy">
+          <img src="./assets/images/logos/02-ministerio-hacienda.png" alt="Ministerio de Hacienda - Gobierno de España" class="funding-item" loading="lazy">
+          <img src="./assets/images/logos/03-fondos-europeos.png" alt="Fondos Europeos" class="funding-item" loading="lazy">
+          <img src="./assets/images/logos/04-junta-andalucia.png" alt="Junta de Andalucía" class="funding-item" loading="lazy">
+          <img src="./assets/images/logos/05-ayuntamiento-huelma.png" alt="Ayuntamiento de Huelma" class="funding-item" loading="lazy">
+        </div>
+      </div>
     </div>
   </div>
 
