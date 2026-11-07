@@ -41,6 +41,8 @@
     </div>
 
     <div class="hud-actions">
+      <button class="btn-hud" id="btn-wind-toggle" title="Sonido ambiente de viento" onclick="window.mountainWind.toggle()">🍃 Viento</button>
+      <button class="btn-hud active" id="btn-voice-toggle" title="Locución por voz en cumbres" onclick="window.toggleVoiceNarration()">🔊 Voz</button>
       <button class="btn-hud" id="btn-calibrator" onclick="window.toggleCalibrationMode()">Modo Calibrador</button>
       <button class="btn-hud-vr" onclick="document.querySelector('a-scene').enterVR()">Entrar en VR</button>
     </div>
@@ -123,10 +125,43 @@
       Gira la pantalla hasta que la cruz apunte a la cumbre y pulsa para fijar el cartel.
     </div>
     <button class="btn-calib-action" onclick="window.addHotspotAtCurrentView()">➕ Fijar Cumbre Aquí</button>
+    <div style="display: flex; gap: 6px; margin-top: 6px;">
+      <button class="btn-hud" style="flex: 1; padding: 6px; font-size: 0.74rem;" onclick="window.exportHotspotsToClipboard()">📋 Copiar Código</button>
+      <button class="btn-hud" style="flex: 1; padding: 6px; font-size: 0.74rem;" onclick="window.downloadHotspotsFile()">📥 Descargar .js</button>
+    </div>
     <button class="btn-calib-reset" style="margin-top: 6px;" onclick="window.clearAllHotspots()">🗑️ Borrar Todo y Dejar en Blanco</button>
     <div class="calib-list-box">
       <div style="font-weight:bold; color:#00C4D6; margin-bottom:4px; font-size:0.75rem;">Cumbres en esta panorámica:</div>
       <div id="calibrator-hotspots-list"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       WIDGET PEAKVISOR: PUNTO DE VISTA Y BRÚJULA DINÁMICA
+       ========================================================================== -->
+  <div class="viewpoint-compass-widget" id="viewpoint-compass">
+    <div class="viewpoint-info">
+      <div class="viewpoint-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#00C4D6">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+      </div>
+      <div class="viewpoint-texts">
+        <span class="viewpoint-name" id="viewpoint-name">Mágina</span>
+        <span class="viewpoint-alt" id="viewpoint-alt">2 165 m</span>
+      </div>
+    </div>
+
+    <div class="compass-dial-wrap">
+      <div class="compass-ring-outer"></div>
+      <div class="compass-disc" id="compass-disc">
+        <div class="compass-fov-wedge" id="compass-fov-wedge"></div>
+        <span class="compass-mark mark-n"><span class="n-arrow">▲</span>N</span>
+        <span class="compass-mark mark-e">E</span>
+        <span class="compass-mark mark-s">S</span>
+        <span class="compass-mark mark-w">W</span>
+        <div class="compass-center-heading" id="compass-heading">-99°</div>
+      </div>
     </div>
   </div>
 
@@ -146,15 +181,14 @@
 
     <a-entity id="camera-rig" position="0 1.6 0">
       <a-camera id="head-camera" look-controls="reverseMouseDrag: false" wasd-controls="enabled: false">
-        <!-- Cursor de mirada (Gaze) para cascos VR sin mandos o VR móvil -->
+        <!-- Retícula de mirada VR sutil (Solo punto blanco limpio, sin anillos azules para evitar mareos) -->
         <a-entity id="gaze-cursor"
                   cursor="fuse: true; fuseTimeout: 1200"
                   position="0 0 -1.2"
-                  geometry="primitive: ring; radiusInner: 0.016; radiusOuter: 0.024"
-                  material="color: #00C4D6; shader: flat; opacity: 0.85; transparent: true"
+                  geometry="primitive: circle; radius: 0.0035"
+                  material="color: #FFFFFF; shader: flat; opacity: 0.85; transparent: true; depthTest: false"
                   raycaster="objects: .clickable"
                   visible="false">
-          <a-circle radius="0.005" material="color: #FFFFFF; shader: flat"></a-circle>
         </a-entity>
       </a-camera>
 

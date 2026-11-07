@@ -6,7 +6,9 @@ const SCENES_DATA = {
   "magina": {
     "id": "magina",
     "name": "Cumbre de Pico Mágina",
-    "altitude": "2.167 m",
+    "shortName": "Mágina",
+    "altitude": "2 165 m",
+    "baseHeading": -99,
     "image": "assets/images/foto_360_magina.jpg",
     "skyRotation": "0 0 0",
     "hotspots": [
@@ -16,14 +18,24 @@ const SCENES_DATA = {
         "elevation": "2.036 m",
         "yaw": 0.0,
         "pitch": 1.5,
-        "desc": "En su cima se alza la estación de telecomunicaciones. Domina toda la vertiente de Mancha Real con amplias vistas hacia la Vega de Jaén."
+        "desc": "Segunda cumbre más alta de Sierra Mágina. En su cima se alza la estación de telecomunicaciones y vértice geodésico, dominando la Vega de Jaén."
+      },
+      {
+        "id": "pena-jaen",
+        "title": "Peña de Jaén",
+        "elevation": "2.147 m",
+        "yaw": -13.5,
+        "pitch": 2.0,
+        "desc": "Cumbre destacada de Sierra Mágina."
       }
     ]
   },
   "miramundos": {
     "id": "miramundos",
     "name": "Cumbre de Miramundos",
+    "shortName": "Miramundos",
     "altitude": "2.077 m",
+    "baseHeading": -45,
     "image": "assets/images/foto_360_miramundos.jpg",
     "skyRotation": "0 -90 0",
     "hotspots": [
@@ -33,7 +45,7 @@ const SCENES_DATA = {
         "elevation": "2.077 m",
         "yaw": 24.0,
         "pitch": -2.0,
-        "desc": "Una de las cumbres más representativas del macizo calizo de Sierra Mágina."
+        "desc": "Espigón calizo culminante sobre el anfiteatro kárstico de Sierra Mágina."
       },
       {
         "id": "refugio-miramundos",
@@ -41,7 +53,7 @@ const SCENES_DATA = {
         "elevation": "2.077 m",
         "yaw": -5.0,
         "pitch": -4.0,
-        "desc": "Histórica caseta forestal levantada en piedra seca en la cumbre."
+        "desc": "Histórica caseta forestal levantada en mampostería tradicional de piedra seca en la cumbre."
       }
     ]
   }
