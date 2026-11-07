@@ -325,6 +325,408 @@ function createDescCardCanvas(desc) {
 }
 
 // ==============================================================================
+// BRÚJULA DE SUELO VR (ANILLO GUARDIÁN) Y WIDGET HUD VR FLOTANTE
+// ==============================================================================
+function createFloorCompassCanvas() {
+  const size = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cx = size / 2;
+  const cy = size / 2;
+
+  ctx.clearRect(0, 0, size, size);
+
+  const rOuter = 480;
+  const rSafe = 450;
+  const rText = 390;
+  const rCard = 345;
+  const rCenter = 125;
+
+  // 1. Zona segura de suelo: degradado radial tenue (sensación de área delimitada)
+  const grad = ctx.createRadialGradient(cx, cy, 60, cx, cy, rOuter);
+  grad.addColorStop(0, 'rgba(0, 196, 214, 0.02)');
+  grad.addColorStop(0.7, 'rgba(0, 196, 214, 0.06)');
+  grad.addColorStop(0.95, 'rgba(0, 196, 214, 0.15)');
+  grad.addColorStop(1, 'rgba(0, 196, 214, 0.0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rOuter, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Anillo exterior Guardián (Delimita el espacio para no salir de la zona segura)
+  ctx.save();
+  ctx.shadowColor = '#00C4D6';
+  ctx.shadowBlur = 14;
+  ctx.strokeStyle = '#00C4D6';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rOuter, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Línea interior discontinua de guía
+  ctx.save();
+  ctx.setLineDash([10, 10]);
+  ctx.strokeStyle = 'rgba(0, 196, 214, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rSafe, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Graduaciones y marcas angulares de 360 grados
+  for (let i = 0; i < 360; i += 5) {
+    const rad = (i - 90) * (Math.PI / 180);
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    let len = 10;
+    let stroke = 'rgba(255, 255, 255, 0.35)';
+    let width = 1.2;
+
+    if (i % 30 === 0) {
+      len = 26;
+      stroke = (i === 0) ? '#EE5959' : 'rgba(255, 255, 255, 0.95)';
+      width = 2.8;
+    } else if (i % 10 === 0) {
+      len = 16;
+      stroke = 'rgba(0, 196, 214, 0.7)';
+      width = 1.8;
+    }
+
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(cx + cos * (rOuter - 4), cy + sin * (rOuter - 4));
+    ctx.lineTo(cx + cos * (rOuter - 4 - len), cy + sin * (rOuter - 4 - len));
+    ctx.stroke();
+
+    // Números de grados cada 30°
+    if (i % 30 === 0 && i !== 0 && i !== 90 && i !== 180 && i !== 270) {
+      ctx.save();
+      ctx.translate(cx + cos * rText, cy + sin * rText);
+      ctx.rotate(rad + Math.PI / 2);
+      ctx.fillStyle = 'rgba(210, 221, 216, 0.8)';
+      ctx.font = 'bold 16px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${i}°`, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  // 4. Sector y Flecha del NORTE (Rojo Coral #EE5959 PeakVisor)
+  ctx.save();
+  ctx.fillStyle = 'rgba(238, 89, 89, 0.38)';
+  ctx.beginPath();
+  const nRad1 = (-90 - 16) * (Math.PI / 180);
+  const nRad2 = (-90 + 16) * (Math.PI / 180);
+  ctx.moveTo(cx, cy - rCenter - 10);
+  ctx.lineTo(cx + Math.cos(nRad1) * (rOuter - 10), cy + Math.sin(nRad1) * (rOuter - 10));
+  ctx.arc(cx, cy, rOuter - 10, nRad1, nRad2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Gran Flecha de Norte
+  ctx.shadowColor = '#EE5959';
+  ctx.shadowBlur = 16;
+  ctx.fillStyle = '#EE5959';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - rOuter + 6);
+  ctx.lineTo(cx - 20, cy - rOuter + 38);
+  ctx.lineTo(cx + 20, cy - rOuter + 38);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Letra N y subtexto NORTE · 0°
+  ctx.save();
+  ctx.fillStyle = '#EE5959';
+  ctx.shadowColor = 'rgba(238, 89, 89, 0.85)';
+  ctx.shadowBlur = 10;
+  ctx.font = 'bold 46px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('N', cx, cy - rCard);
+
+  ctx.font = 'bold 13px -apple-system, sans-serif';
+  ctx.fillText('NORTE · 0°', cx, cy - rCard + 32);
+  ctx.restore();
+
+  // 5. ESTE (90°), SUR (180°), OESTE (270°)
+  const cardinals = [
+    { label: 'E', sub: 'ESTE · 90°', deg: 90, color: '#00C4D6' },
+    { label: 'S', sub: 'SUR · 180°', deg: 180, color: '#8C9994' },
+    { label: 'W', sub: 'OESTE · 270°', deg: 270, color: '#00C4D6' }
+  ];
+
+  cardinals.forEach(card => {
+    const rad = (card.deg - 90) * (Math.PI / 180);
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    ctx.save();
+    ctx.translate(cx + cos * rCard, cy + sin * rCard);
+    ctx.rotate(rad + Math.PI / 2);
+    ctx.fillStyle = card.color;
+    ctx.font = 'bold 38px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(card.label, 0, -8);
+
+    ctx.font = 'bold 12px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.fillText(card.sub, 0, 18);
+    ctx.restore();
+  });
+
+  // Intercardinales: NE, SE, SO, NO
+  const inters = [
+    { label: 'NE', deg: 45 },
+    { label: 'SE', deg: 135 },
+    { label: 'SO', deg: 225 },
+    { label: 'NO', deg: 315 }
+  ];
+  inters.forEach(inter => {
+    const rad = (inter.deg - 90) * (Math.PI / 180);
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    ctx.save();
+    ctx.translate(cx + cos * (rCard + 12), cy + sin * (rCard + 12));
+    ctx.rotate(rad + Math.PI / 2);
+    ctx.fillStyle = 'rgba(0, 196, 214, 0.7)';
+    ctx.font = 'bold 18px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(inter.label, 0, 0);
+    ctx.restore();
+  });
+
+  // 6. Centro de la Zona Segura (Área donde pisa el usuario)
+  ctx.save();
+  ctx.setLineDash([6, 6]);
+  ctx.strokeStyle = 'rgba(0, 196, 214, 0.45)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rCenter, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Cruz central sutil
+  ctx.setLineDash([]);
+  ctx.strokeStyle = 'rgba(0, 196, 214, 0.35)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(cx - 75, cy);
+  ctx.lineTo(cx + 75, cy);
+  ctx.moveTo(cx, cy - 75);
+  ctx.lineTo(cx, cy + 75);
+  ctx.stroke();
+
+  // Texto central identificativo
+  ctx.fillStyle = 'rgba(0, 196, 214, 0.85)';
+  ctx.font = 'bold 14px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('✦ ZONA SEGURA VR ✦', cx, cy - 14);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.font = '11px -apple-system, sans-serif';
+  ctx.fillText('SIERRA MÁGINA 360°', cx, cy + 10);
+  ctx.restore();
+
+  return canvas;
+}
+
+function setupFloorCompass() {
+  const planeEl = document.getElementById('vr-floor-compass');
+  if (!planeEl) return;
+
+  const canvas = createFloorCompassCanvas();
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+
+  const applyTexture = () => {
+    const mesh = planeEl.getObject3D('mesh');
+    if (mesh && mesh.material) {
+      mesh.material.map = texture;
+      mesh.material.needsUpdate = true;
+    }
+  };
+
+  planeEl.addEventListener('loaded', applyTexture);
+  applyTexture();
+
+  updateFloorCompassRotation();
+}
+
+function updateFloorCompassRotation() {
+  const rigEl = document.getElementById('vr-floor-compass-rig');
+  if (!rigEl) return;
+
+  const sceneData = window.LIVE_SCENES[AppState.currentSceneId] || {};
+  const baseHeading = (sceneData.baseHeading !== undefined) ? sceneData.baseHeading : -99;
+  rigEl.setAttribute('rotation', `0 ${baseHeading} 0`);
+}
+
+let lastVrHeading = null;
+let vrCompassTexture = null;
+let vrCompassCanvas = null;
+
+function updateVrHudCompass(heading, sceneData) {
+  const sceneEl = document.querySelector('a-scene');
+  if (!sceneEl || !sceneEl.is('vr-mode')) return;
+
+  if (lastVrHeading === heading) return;
+  lastVrHeading = heading;
+
+  const planeEl = document.getElementById('vr-hud-compass-plane');
+  if (!planeEl) return;
+
+  const name = sceneData.shortName || sceneData.name.replace('Cumbre de ', '');
+  const alt = sceneData.altitude || '';
+
+  if (!vrCompassCanvas) {
+    vrCompassCanvas = document.createElement('canvas');
+    vrCompassCanvas.width = 540;
+    vrCompassCanvas.height = 170;
+    vrCompassTexture = new THREE.CanvasTexture(vrCompassCanvas);
+    vrCompassTexture.minFilter = THREE.LinearFilter;
+    vrCompassTexture.magFilter = THREE.LinearFilter;
+    vrCompassTexture.generateMipmaps = false;
+
+    const applyTexture = () => {
+      const mesh = planeEl.getObject3D('mesh');
+      if (mesh && mesh.material) {
+        mesh.material.map = vrCompassTexture;
+        mesh.material.needsUpdate = true;
+      }
+    };
+    planeEl.addEventListener('loaded', applyTexture);
+    applyTexture();
+  }
+
+  const ctx = vrCompassCanvas.getContext('2d');
+  ctx.clearRect(0, 0, 540, 170);
+
+  // Cápsula redondeada PeakVisor
+  const pad = 10;
+  const w = 520;
+  const h = 150;
+  const r = h / 2;
+  const x = pad;
+  const y = pad;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(14, 22, 19, 0.94)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(x + r, y + h);
+  ctx.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Icono de ubicación cian
+  const iconX = x + 38;
+  const iconY = y + 75;
+  ctx.fillStyle = '#00C4D6';
+  ctx.beginPath();
+  ctx.arc(iconX, iconY - 8, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0E1613';
+  ctx.beginPath();
+  ctx.arc(iconX, iconY - 8, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Textos del punto de vista
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 36px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(name, iconX + 28, iconY - 2);
+
+  ctx.fillStyle = '#D2DDD8';
+  ctx.font = '500 24px -apple-system, sans-serif';
+  ctx.fillText(alt, iconX + 28, iconY + 28);
+
+  // Brújula circular a la derecha
+  const dialX = x + w - r;
+  const dialY = y + r;
+  const dialR = r - 12;
+
+  // Anillo exterior coral
+  ctx.strokeStyle = '#EE5959';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(dialX, dialY, dialR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Fondo oscuro del dial
+  ctx.fillStyle = '#0B110F';
+  ctx.beginPath();
+  ctx.arc(dialX, dialY, dialR - 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cuña FOV sombreada rotada según el rumbo
+  ctx.save();
+  ctx.translate(dialX, dialY);
+  ctx.rotate((heading - 90) * (Math.PI / 180));
+  ctx.fillStyle = 'rgba(238, 89, 89, 0.45)';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, dialR - 3, -Math.PI / 6, Math.PI / 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Marcas cardinales en el dial
+  ctx.save();
+  ctx.fillStyle = '#EE5959';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('▲N', dialX, dialY - dialR + 15);
+
+  ctx.fillStyle = '#8C9994';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('E', dialX + dialR - 15, dialY);
+  ctx.fillText('S', dialX, dialY + dialR - 14);
+  ctx.fillText('W', dialX - dialR + 15, dialY);
+  ctx.restore();
+
+  // Aro interior punteado
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(dialX, dialY, 26, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Texto del rumbo en el centro
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 24px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${heading}°`, dialX, dialY + 1);
+
+  ctx.restore();
+
+  if (vrCompassTexture) {
+    vrCompassTexture.needsUpdate = true;
+  }
+}
+
+// ==============================================================================
 // COMPONENTE: peak-marker (Testigo Blanco Sutil · Tarjeta 3D · Locución)
 // ==============================================================================
 AFRAME.registerComponent('peak-marker', {
@@ -535,6 +937,8 @@ function renderScene(sceneId) {
   const vpAlt = document.getElementById('viewpoint-alt');
   if (vpName) vpName.textContent = sceneData.shortName || sceneData.name.replace('Cumbre de ', '');
   if (vpAlt) vpAlt.textContent = sceneData.altitude;
+  updateFloorCompassRotation();
+  lastVrHeading = null;
 
   const sky = document.getElementById('sky-360');
   sky.setAttribute('src', sceneData.image);
@@ -737,12 +1141,88 @@ window.deletePeak = function (idx) {
   }
 };
 
+window.getCurrentHeading = function () {
+  const sceneData = window.LIVE_SCENES[AppState.currentSceneId] || {};
+  const baseHeading = (sceneData.baseHeading !== undefined) ? sceneData.baseHeading : -99;
+  let currentHeading = Math.round(baseHeading + AppState.currentYaw);
+  while (currentHeading > 180) currentHeading -= 360;
+  while (currentHeading <= -180) currentHeading += 360;
+  return currentHeading;
+};
+
+window.promptCalibrateCompass = function () {
+  const sceneData = window.LIVE_SCENES[AppState.currentSceneId] || {};
+  const currH = window.getCurrentHeading();
+  const input = prompt(
+    `🧭 CALIBRAR BRÚJULA PARA '${sceneData.shortName || sceneData.name}':\n\n` +
+    `Introduce el rumbo real de la brújula hacia donde estás mirando en este momento.\n` +
+    `(Ejemplos: -99° o 261° para Pico Almadén, 0° para Norte, 90° para Este)\n\n` +
+    `Rumbo actual: ${currH}°`,
+    `${currH}°`
+  );
+  if (input !== null && input.trim() !== '') {
+    window.setCompassHeadingForCurrentView(input.trim());
+  }
+};
+
+window.setCompassHeadingForCurrentView = function (val) {
+  if (!val) return;
+  let str = String(val).toUpperCase().replace('°', '').trim();
+  let degrees = null;
+  if (str === 'N' || str === 'NORTE') degrees = 0;
+  else if (str === 'E' || str === 'ESTE') degrees = 90;
+  else if (str === 'S' || str === 'SUR') degrees = 180;
+  else if (str === 'W' || str === 'O' || str === 'OESTE') degrees = -90;
+  else {
+    const num = parseFloat(str);
+    if (!isNaN(num)) degrees = num;
+  }
+
+  if (degrees === null) {
+    alert("Por favor, introduce un ángulo numérico válido en grados (ej: -99°, 261°, 0°)");
+    return;
+  }
+
+  while (degrees > 180) degrees -= 360;
+  while (degrees <= -180) degrees += 360;
+
+  // currentHeading = baseHeading + AppState.currentYaw
+  // => baseHeading = degrees - AppState.currentYaw
+  let newBaseHeading = Math.round(degrees - AppState.currentYaw);
+  while (newBaseHeading > 180) newBaseHeading -= 360;
+  while (newBaseHeading <= -180) newBaseHeading += 360;
+
+  window.LIVE_SCENES[AppState.currentSceneId].baseHeading = newBaseHeading;
+  saveLiveScenesData();
+
+  updateFloorCompassRotation();
+  lastVrHeading = null; // forzar refresco del widget en VR
+
+  const sceneData = window.LIVE_SCENES[AppState.currentSceneId] || {};
+  alert(`🧭 ¡Brújula calibrada para '${sceneData.shortName || sceneData.name}'!\n` +
+        `Rumbo fijado en ${degrees}° hacia esta vista.\n` +
+        `El Norte, la brújula y el anillo del suelo han quedado sincronizados.`);
+};
+
 window.addHotspotAtCurrentView = function () {
   const title = prompt("Nombre de la cumbre (ej: 'Peña de Jaén', 'Pico Almadén'):");
   if (!title || !title.trim()) return;
 
   const elev = prompt("Altitud (ej: '2.147 m'):", "2.000 m") || "";
   const desc = prompt("Breve descripción (se mostrará y locutará al enfocar):") || "";
+
+  // Opción para calibrar la brújula en este nuevo hito
+  const currH = window.getCurrentHeading();
+  const compassPrompt = prompt(
+    `🧭 CALIBRACIÓN DE BRÚJULA PARA ESTA CUMBRE (Opcional):\n\n` +
+    `Introduce el rumbo real de la brújula hacia '${title.trim()}' en grados.\n` +
+    `(Ejemplo: -99° o 261° para Almadén, 0° para Norte)\n\n` +
+    `Rumbo actual: ${currH}°. Pulsa Aceptar para calibrarlo o Cancelar para mantenerlo:`,
+    `${currH}°`
+  );
+  if (compassPrompt !== null && compassPrompt.trim() !== '') {
+    window.setCompassHeadingForCurrentView(compassPrompt.trim());
+  }
 
   const newHs = {
     id: `peak-${Date.now()}`,
@@ -834,9 +1314,14 @@ function updateCameraOrientationLoop() {
       if (AppState.calibrationMode) {
         const calibYaw = document.getElementById('calib-yaw');
         const calibPitch = document.getElementById('calib-pitch');
+        const calibCompass = document.getElementById('calib-compass-val');
         if (calibYaw) calibYaw.textContent = `${AppState.currentYaw}°`;
         if (calibPitch) calibPitch.textContent = `${AppState.currentPitch}°`;
+        if (calibCompass) calibCompass.textContent = `${currentHeading}°`;
       }
+
+      // Actualizar Widget HUD flotante en Realidad Virtual
+      updateVrHudCompass(currentHeading, sceneData);
     }
   }
   requestAnimationFrame(updateCameraOrientationLoop);
@@ -947,16 +1432,21 @@ function setupDesktopMouseInteractions() {
 function setupCursorMode() {
   const sceneEl = document.querySelector('a-scene');
   const gaze = document.getElementById('gaze-cursor');
+  const vrHudCompass = document.getElementById('vr-hud-compass');
 
-  if (sceneEl && gaze) {
-    gaze.setAttribute('visible', 'false');
+  if (sceneEl) {
+    if (gaze) gaze.setAttribute('visible', 'false');
+    if (vrHudCompass) vrHudCompass.setAttribute('visible', 'false');
 
     sceneEl.addEventListener('enter-vr', () => {
-      gaze.setAttribute('visible', 'true');
+      if (gaze) gaze.setAttribute('visible', 'true');
+      if (vrHudCompass) vrHudCompass.setAttribute('visible', 'true');
+      lastVrHeading = null; // forzar actualización inicial del HUD
     });
 
     sceneEl.addEventListener('exit-vr', () => {
-      gaze.setAttribute('visible', 'false');
+      if (gaze) gaze.setAttribute('visible', 'false');
+      if (vrHudCompass) vrHudCompass.setAttribute('visible', 'false');
     });
   }
 }
@@ -970,6 +1460,7 @@ window.startExperience = function () {
 
 document.addEventListener('DOMContentLoaded', () => {
   renderScene("magina");
+  setupFloorCompass();
   updateCameraOrientationLoop();
   setupCursorMode();
   setupDesktopMouseInteractions();

@@ -116,15 +116,19 @@
   <div class="calibrator-reticle" id="calibrator-reticle"></div>
 
   <div class="calibrator-panel" id="calibrator-panel">
-    <div class="calibrator-title">📍 Herramienta de Fijación de Cumbres</div>
+    <div class="calibrator-title">📍 Herramienta de Calibración de Cumbres y Brújula</div>
     <div style="margin: 6px 0; font-size: 0.85rem;">
       <div>Apuntando a:</div>
       <div>Horizontal: <strong id="calib-yaw" style="color: #00C4D6;">0°</strong> | Vertical: <strong id="calib-pitch" style="color: #00C4D6;">0°</strong></div>
+      <div style="margin-top: 3px;">Rumbo Brújula actual: <strong id="calib-compass-val" style="color: #EE5959;">-99°</strong></div>
     </div>
-    <div style="font-size: 0.72rem; color: #BBB; margin-bottom: 10px;">
-      Gira la pantalla hasta que la cruz apunte a la cumbre y pulsa para fijar el cartel.
+    <div style="font-size: 0.72rem; color: #BBB; margin-bottom: 8px;">
+      Gira la pantalla hasta que la cruz apunte a la cumbre. Puedes fijar el hito y calibrar el rumbo real de la brújula hacia este punto.
     </div>
-    <button class="btn-calib-action" onclick="window.addHotspotAtCurrentView()">➕ Fijar Cumbre Aquí</button>
+
+    <button class="btn-calib-action" onclick="window.addHotspotAtCurrentView()">➕ Fijar Cumbre Aquí (con opción de Brújula)</button>
+    <button class="btn-calib-action" style="background: linear-gradient(135deg, #EE5959, #B83232); margin-top: 6px;" onclick="window.promptCalibrateCompass()">🧭 Calibrar Brújula en esta Dirección</button>
+
     <div style="display: flex; gap: 6px; margin-top: 6px;">
       <button class="btn-hud" style="flex: 1; padding: 6px; font-size: 0.74rem;" onclick="window.exportHotspotsToClipboard()">📋 Copiar Código</button>
       <button class="btn-hud" style="flex: 1; padding: 6px; font-size: 0.74rem;" onclick="window.downloadHotspotsFile()">📥 Descargar .js</button>
@@ -139,7 +143,7 @@
   <!-- ==========================================================================
        WIDGET PEAKVISOR: PUNTO DE VISTA Y BRÚJULA DINÁMICA
        ========================================================================== -->
-  <div class="viewpoint-compass-widget" id="viewpoint-compass">
+  <div class="viewpoint-compass-widget" id="viewpoint-compass" title="Clic para calibrar rumbo de la brújula" onclick="window.promptCalibrateCompass()">
     <div class="viewpoint-info">
       <div class="viewpoint-icon">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="#00C4D6">
@@ -190,11 +194,25 @@
                   raycaster="objects: .clickable"
                   visible="false">
         </a-entity>
+
+        <!-- Widget Brújula Flotante VR (Visible en Meta Quest en esquina de campo de visión) -->
+        <a-entity id="vr-hud-compass" position="0.34 -0.24 -0.75" scale="0.14 0.14 0.14" visible="false">
+          <a-plane id="vr-hud-compass-plane" width="2.4" height="0.75" material="transparent: true; shader: flat; side: double; depthTest: false"></a-plane>
+        </a-entity>
       </a-camera>
 
       <!-- Punteros láser para Meta Quest (Touch Plus Controllers) -->
       <a-entity laser-controls="hand: right" raycaster="objects: .clickable; lineColor: #00C4D6; lineOpacity: 0.8"></a-entity>
       <a-entity laser-controls="hand: left" raycaster="objects: .clickable; lineColor: #00C4D6; lineOpacity: 0.8"></a-entity>
+    </a-entity>
+
+    <!-- Anillo Guardián y Brújula de Suelo VR (Delimita el espacio para no salirse y orienta 360° el Norte) -->
+    <a-entity id="vr-floor-compass-rig" position="0 0.02 0" rotation="0 0 0">
+      <a-plane id="vr-floor-compass"
+               rotation="-90 0 0"
+               width="3.2"
+               height="3.2"
+               material="transparent: true; shader: flat; side: double; depthTest: true; opacity: 0.95"></a-plane>
     </a-entity>
 
     <a-sky id="sky-360" 
