@@ -16,19 +16,36 @@ const AppState = {
   windEnabled: false
 };
 
+const CURRENT_DATA_VERSION = "1.2.0";
+
 function getLiveScenesData() {
+  const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
   try {
+    const savedVer = localStorage.getItem('sierra_magina_dataset_version');
+    // Si la versión guardada en el navegador es anterior a la oficial (1.2.0),
+    // actualizar automáticamente el localStorage con todos los datos oficiales
+    if (savedVer !== CURRENT_DATA_VERSION) {
+      localStorage.setItem('sierra_magina_360_hotspots', JSON.stringify(defaultData));
+      localStorage.setItem('sierra_magina_dataset_version', CURRENT_DATA_VERSION);
+      return defaultData;
+    }
+
     const saved = localStorage.getItem('sierra_magina_360_hotspots');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed && parsed.magina && Array.isArray(parsed.magina.hotspots) && parsed.magina.hotspots.length > 0) {
-        return parsed;
+      if (parsed && typeof parsed === 'object') {
+        for (const sceneId in defaultData) {
+          if (parsed[sceneId] && Array.isArray(parsed[sceneId].hotspots) && parsed[sceneId].hotspots.length >= defaultData[sceneId].hotspots.length) {
+            defaultData[sceneId] = parsed[sceneId];
+          }
+        }
+        return defaultData;
       }
     }
   } catch (e) {
     console.warn("Error leyendo localStorage:", e);
   }
-  return JSON.parse(JSON.stringify(window.SCENES_DATA));
+  return defaultData;
 }
 
 // Cargar siempre datos persistidos del usuario si existen
@@ -37,6 +54,7 @@ window.LIVE_SCENES = getLiveScenesData();
 function saveLiveScenesData() {
   try {
     localStorage.setItem('sierra_magina_360_hotspots', JSON.stringify(window.LIVE_SCENES));
+    localStorage.setItem('sierra_magina_dataset_version', CURRENT_DATA_VERSION);
   } catch (e) {}
 
   // Sincronización automática si se ejecuta sobre el servidor Node local
