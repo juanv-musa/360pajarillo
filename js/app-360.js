@@ -267,62 +267,213 @@ function createPeakVisorCanvas(title, elevation) {
 }
 
 // ==============================================================================
-// GENERADOR DE TARJETA 3D DE DESCRIPCIÓN (Visible en Meta Quest y Pantalla)
+// TARJETA 3D FLOTANTE CERCANA EN VR (Lectura Cómoda a 2.0 metros, Alta Legibilidad)
 // ==============================================================================
-function createDescCardCanvas(desc) {
-  if (!desc || !desc.trim()) return null;
+function createFloatingTextCardCanvas(data) {
   const canvas = document.createElement('canvas');
-  canvas.width = 720;
-  canvas.height = 240;
+  canvas.width = 1024;
+  canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
-  // Fondo redondeado elegante con borde cian
-  ctx.fillStyle = 'rgba(10, 18, 14, 0.94)';
-  ctx.strokeStyle = '#00C4D6';
-  ctx.lineWidth = 4;
+  ctx.clearRect(0, 0, 1024, 512);
+
+  const pad = 24;
+  const w = 1024 - pad * 2;
+  const h = 512 - pad * 2;
+  const r = 36;
+  const x = pad;
+  const y = pad;
+
+  // 1. Fondo Glassmorphic de alta montaña (elegante, oscuro y translúcido)
+  ctx.save();
+  ctx.fillStyle = 'rgba(10, 20, 16, 0.94)';
+  ctx.strokeStyle = 'rgba(0, 196, 214, 0.65)';
+  ctx.lineWidth = 3.5;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 12;
+
   ctx.beginPath();
   if (ctx.roundRect) {
-    ctx.roundRect(4, 4, 712, 232, 20);
+    ctx.roundRect(x, y, w, h, r);
   } else {
-    ctx.rect(4, 4, 712, 232);
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+    ctx.lineTo(x + r, y + h);
+    ctx.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+    ctx.lineTo(x, y + r);
+    ctx.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5);
+    ctx.closePath();
   }
   ctx.fill();
   ctx.stroke();
+  ctx.restore();
 
-  // Texto de la descripción con word-wrap
+  // 2. Línea superior decorativa cian
+  ctx.save();
+  const grad = ctx.createLinearGradient(x + 40, y + 2, x + w - 40, y + 2);
+  grad.addColorStop(0, 'rgba(0, 196, 214, 0.0)');
+  grad.addColorStop(0.3, '#00C4D6');
+  grad.addColorStop(0.7, '#00C4D6');
+  grad.addColorStop(1, 'rgba(0, 196, 214, 0.0)');
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(x + 40, y + 3);
+  ctx.lineTo(x + w - 40, y + 3);
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Etiqueta superior
+  ctx.fillStyle = '#00C4D6';
+  ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('🏔️  SIERRA MÁGINA · CUMBRE DESTACADA', x + 44, y + 36);
+
+  // 4. Título de la Cumbre
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = '500 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = 'bold 48px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillText(data.title || 'Cumbre', x + 44, y + 74);
+
+  // 5. Pastilla de Altitud
+  if (data.elevation) {
+    const titleWidth = ctx.measureText(data.title || 'Cumbre').width;
+    const badgeX = x + 44 + titleWidth + 24;
+    const badgeY = y + 78;
+    const badgeH = 46;
+    const badgeR = badgeH / 2;
+
+    ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, sans-serif';
+    const altText = data.elevation;
+    const altW = ctx.measureText(altText).width + 36;
+
+    ctx.save();
+    ctx.fillStyle = '#00C4D6';
+    ctx.beginPath();
+    ctx.arc(badgeX + badgeR, badgeY + badgeR, badgeR, Math.PI / 2, Math.PI * 1.5);
+    ctx.lineTo(badgeX + altW - badgeR, badgeY);
+    ctx.arc(badgeX + altW - badgeR, badgeY + badgeR, badgeR, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(badgeX + badgeR, badgeY + badgeH);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(altText, badgeX + altW / 2, badgeY + badgeR + 1);
+    ctx.restore();
+  }
+
+  // Línea divisoria suave
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x + 44, y + 144);
+  ctx.lineTo(x + w - 44, y + 144);
+  ctx.stroke();
+
+  // 6. Texto descriptivo (Grande, nítido y multilínea con interlineado holgado)
+  const descText = data.desc || 'Cumbre destacada de Sierra Mágina.';
+  ctx.fillStyle = '#E4EDE8';
+  ctx.font = '400 32px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
 
-  const words = desc.trim().split(' ');
+  const maxTextWidth = w - 88;
+  const words = descText.split(' ');
   let line = '';
-  let y = 26;
-  const maxWidth = 660;
-  const lineHeight = 38;
+  let lineY = y + 168;
+  const lineHeight = 46;
 
   for (let n = 0; n < words.length; n++) {
     const testLine = line + words[n] + ' ';
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && n > 0) {
-      ctx.fillText(line, 28, y);
+    const testW = ctx.measureText(testLine).width;
+    if (testW > maxTextWidth && n > 0) {
+      ctx.fillText(line, x + 44, lineY);
       line = words[n] + ' ';
-      y += lineHeight;
-      if (y > 180) {
-        line += '...';
-        break;
-      }
+      lineY += lineHeight;
     } else {
       line = testLine;
     }
   }
-  ctx.fillText(line, 28, y);
+  ctx.fillText(line, x + 44, lineY);
 
-  return {
-    canvas,
-    aspect: canvas.width / canvas.height
-  };
+  // 7. Pie de ficha con indicador de locución
+  ctx.fillStyle = 'rgba(140, 153, 148, 0.85)';
+  ctx.font = 'bold 20px -apple-system, sans-serif';
+  ctx.fillText('🔊 Locución por voz activa', x + 44, y + h - 50);
+
+  return canvas;
 }
+
+let currentFloatingTexture = null;
+
+function showFloatingCard(peakData) {
+  if (!peakData) return;
+  const rig = document.getElementById('vr-floating-card-rig');
+  const mesh = document.getElementById('vr-floating-card-mesh');
+  if (!rig || !mesh) return;
+
+  const canvas = createFloatingTextCardCanvas(peakData);
+  if (currentFloatingTexture) {
+    currentFloatingTexture.dispose();
+  }
+  currentFloatingTexture = new THREE.CanvasTexture(canvas);
+  currentFloatingTexture.minFilter = THREE.LinearFilter;
+  currentFloatingTexture.magFilter = THREE.LinearFilter;
+  currentFloatingTexture.generateMipmaps = false;
+
+  const applyTexture = () => {
+    const threeMesh = mesh.getObject3D('mesh');
+    if (threeMesh && threeMesh.material) {
+      threeMesh.material.map = currentFloatingTexture;
+      threeMesh.material.needsUpdate = true;
+    }
+  };
+  mesh.addEventListener('loaded', applyTexture);
+  applyTexture();
+
+  // Posicionar a distancia cercana (2.0 metros) en la dirección del pico,
+  // ligeramente debajo de la vista (pitch - 6.5°) para no tapar la cumbre
+  const cardPitch = (peakData.pitch !== undefined ? peakData.pitch : 0) - 6.5;
+  const cardYaw = peakData.yaw !== undefined ? peakData.yaw : 0;
+  const pos = sphericalToCartesian(cardYaw, cardPitch, 2.0);
+
+  mesh.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+  mesh.setAttribute('look-at-camera', '');
+
+  rig.setAttribute('visible', 'true');
+  rig.setAttribute('animation', {
+    property: 'scale',
+    from: '0.001 0.001 0.001',
+    to: '1 1 1',
+    dur: 250,
+    easing: 'easeOutBack'
+  });
+}
+
+function hideFloatingCard() {
+  const rig = document.getElementById('vr-floating-card-rig');
+  if (!rig) return;
+  rig.setAttribute('animation', {
+    property: 'scale',
+    to: '0.001 0.001 0.001',
+    dur: 180,
+    easing: 'easeInQuad'
+  });
+  setTimeout(() => {
+    const s = rig.getAttribute('scale');
+    if (s && s.x < 0.05) {
+      rig.setAttribute('visible', 'false');
+    }
+  }, 190);
+}
+window.showFloatingCard = showFloatingCard;
+window.hideFloatingCard = hideFloatingCard;
 
 // ==============================================================================
 // BRÚJULA DE SUELO VR (ANILLO GUARDIÁN) Y WIDGET HUD VR FLOTANTE
@@ -568,166 +719,12 @@ function updateFloorCompassRotation() {
   if (!rigEl) return;
 
   const sceneData = window.LIVE_SCENES[AppState.currentSceneId] || {};
-  const baseHeading = (sceneData.baseHeading !== undefined) ? sceneData.baseHeading : -99;
+  const baseHeading = (sceneData.baseHeading !== undefined) ? sceneData.baseHeading : -101;
   rigEl.setAttribute('rotation', `0 ${baseHeading} 0`);
 }
 
-let lastVrHeading = null;
-let vrCompassTexture = null;
-let vrCompassCanvas = null;
-
-function updateVrHudCompass(heading, sceneData) {
-  const sceneEl = document.querySelector('a-scene');
-  if (!sceneEl || !sceneEl.is('vr-mode')) return;
-
-  if (lastVrHeading === heading) return;
-  lastVrHeading = heading;
-
-  const planeEl = document.getElementById('vr-hud-compass-plane');
-  if (!planeEl) return;
-
-  const name = sceneData.shortName || sceneData.name.replace('Cumbre de ', '');
-  const alt = sceneData.altitude || '';
-
-  if (!vrCompassCanvas) {
-    vrCompassCanvas = document.createElement('canvas');
-    vrCompassCanvas.width = 540;
-    vrCompassCanvas.height = 170;
-    vrCompassTexture = new THREE.CanvasTexture(vrCompassCanvas);
-    vrCompassTexture.minFilter = THREE.LinearFilter;
-    vrCompassTexture.magFilter = THREE.LinearFilter;
-    vrCompassTexture.generateMipmaps = false;
-
-    const applyTexture = () => {
-      const mesh = planeEl.getObject3D('mesh');
-      if (mesh && mesh.material) {
-        mesh.material.map = vrCompassTexture;
-        mesh.material.needsUpdate = true;
-      }
-    };
-    planeEl.addEventListener('loaded', applyTexture);
-    applyTexture();
-  }
-
-  const ctx = vrCompassCanvas.getContext('2d');
-  ctx.clearRect(0, 0, 540, 170);
-
-  // Cápsula redondeada PeakVisor
-  const pad = 10;
-  const w = 520;
-  const h = 150;
-  const r = h / 2;
-  const x = pad;
-  const y = pad;
-
-  ctx.save();
-  ctx.fillStyle = 'rgba(14, 22, 19, 0.94)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2);
-  ctx.lineTo(x + r, y + h);
-  ctx.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Icono de ubicación cian
-  const iconX = x + 38;
-  const iconY = y + 75;
-  ctx.fillStyle = '#00C4D6';
-  ctx.beginPath();
-  ctx.arc(iconX, iconY - 8, 14, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#0E1613';
-  ctx.beginPath();
-  ctx.arc(iconX, iconY - 8, 6, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Textos del punto de vista
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 36px -apple-system, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText(name, iconX + 28, iconY - 2);
-
-  ctx.fillStyle = '#D2DDD8';
-  ctx.font = '500 24px -apple-system, sans-serif';
-  ctx.fillText(alt, iconX + 28, iconY + 28);
-
-  // Brújula circular a la derecha
-  const dialX = x + w - r;
-  const dialY = y + r;
-  const dialR = r - 12;
-
-  // Anillo exterior coral
-  ctx.strokeStyle = '#EE5959';
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.arc(dialX, dialY, dialR, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Fondo oscuro del dial
-  ctx.fillStyle = '#0B110F';
-  ctx.beginPath();
-  ctx.arc(dialX, dialY, dialR - 2.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Cuña FOV sombreada rotada según el rumbo
-  ctx.save();
-  ctx.translate(dialX, dialY);
-  ctx.rotate((heading - 90) * (Math.PI / 180));
-  ctx.fillStyle = 'rgba(238, 89, 89, 0.45)';
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.arc(0, 0, dialR - 3, -Math.PI / 6, Math.PI / 6);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  // Marcas cardinales en el dial
-  ctx.save();
-  ctx.fillStyle = '#EE5959';
-  ctx.font = 'bold 15px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('▲N', dialX, dialY - dialR + 15);
-
-  ctx.fillStyle = '#8C9994';
-  ctx.font = 'bold 13px sans-serif';
-  ctx.fillText('E', dialX + dialR - 15, dialY);
-  ctx.fillText('S', dialX, dialY + dialR - 14);
-  ctx.fillText('W', dialX - dialR + 15, dialY);
-  ctx.restore();
-
-  // Aro interior punteado
-  ctx.save();
-  ctx.setLineDash([4, 4]);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(dialX, dialY, 26, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-
-  // Texto del rumbo en el centro
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 24px -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(`${heading}°`, dialX, dialY + 1);
-
-  ctx.restore();
-
-  if (vrCompassTexture) {
-    vrCompassTexture.needsUpdate = true;
-  }
-}
-
 // ==============================================================================
-// COMPONENTE: peak-marker (Testigo Blanco Sutil · Tarjeta 3D · Locución)
+// COMPONENTE: peak-marker (Testigo Blanco Sutil · Línea Detrás de Pastilla · Locución)
 // ==============================================================================
 AFRAME.registerComponent('peak-marker', {
   schema: {
@@ -752,19 +749,6 @@ AFRAME.registerComponent('peak-marker', {
     const height3D = 0.95;
     const width3D = height3D * aspect;
 
-    // Tarjeta 3D de descripción si tiene texto
-    let descMeshHtml = '';
-    const descData = createDescCardCanvas(data.desc);
-    if (descData) {
-      const descH = 0.8;
-      const descW = descH * descData.aspect;
-      descMeshHtml = `
-        <a-plane class="peak-desc-plane clickable" width="${descW}" height="${descH}"
-                 position="${width3D * 0.45} 0.5 0"
-                 material="transparent: true; shader: flat; side: double"></a-plane>
-      `;
-    }
-
     // Estructura DOM A-Frame con testigo sutil (Punto Blanco Limpio)
     el.innerHTML = `
       <!-- 1. Testigo de cumbre: PUNTO BLANCO SUTIL Y LIMPIO (sin círculos azules) -->
@@ -774,20 +758,17 @@ AFRAME.registerComponent('peak-marker', {
       <a-sphere class="peak-hitbox clickable" radius="0.85"
                 material="opacity: 0.001; transparent: true; depthWrite: false; shader: flat"></a-sphere>
 
-      <!-- 3. CONTENEDOR DESPLEGABLE: Línea + Pastilla + Tarjeta de Texto 3D -->
+      <!-- 3. CONTENEDOR DESPLEGABLE: Línea detrás (z = -0.05) + Pastilla delante (z = +0.05) -->
       <a-entity class="peak-popup" position="0 0 0" scale="0.001 0.001 0.001" visible="false">
-        <!-- Línea vertical conectora -->
-        <a-cylinder class="peak-stem clickable" position="0 0.7 0" radius="0.016" height="1.4"
-                    material="color: #00C4D6; shader: flat; opacity: 0.95"></a-cylinder>
+        <!-- Línea vertical conectora: queda limpiamente POR DETRÁS de la pastilla -->
+        <a-cylinder class="peak-stem clickable" position="0 0.65 -0.05" radius="0.016" height="1.3"
+                    material="color: #00C4D6; shader: flat; opacity: 0.95; depthTest: true"></a-cylinder>
 
-        <!-- Pastilla grande PeakVisor a 45 grados -->
-        <a-entity position="0 1.4 0" rotation="0 0 45">
+        <!-- Pastilla grande PeakVisor a 45 grados: por delante de la línea -->
+        <a-entity position="0 1.35 0.05" rotation="0 0 45">
           <a-plane class="peak-pill-plane clickable" width="${width3D}" height="${height3D}" position="${width3D * 0.45} 0 0"
-                   material="transparent: true; shader: flat; side: double"></a-plane>
+                   material="transparent: true; shader: flat; side: double; depthTest: true"></a-plane>
         </a-entity>
-
-        <!-- Tarjeta de descripción 3D horizontal (Visible en VR) -->
-        ${descMeshHtml}
       </a-entity>
     `;
 
@@ -796,43 +777,36 @@ AFRAME.registerComponent('peak-marker', {
     this.hitbox = el.querySelector('.peak-hitbox');
     this.stem = el.querySelector('.peak-stem');
     this.pillPlane = el.querySelector('.peak-pill-plane');
-    this.descPlane = el.querySelector('.peak-desc-plane');
 
-    // Asignar textura Three.js a la pastilla
+    // Asignar textura Three.js a la pastilla (renderOrder mayor para estar delante)
     if (this.pillPlane) {
       const applyTexture = () => {
         const mesh = this.pillPlane.getObject3D('mesh');
         if (mesh && mesh.material) {
           mesh.material.map = texture;
           mesh.material.needsUpdate = true;
+          mesh.renderOrder = 5;
         }
       };
       this.pillPlane.addEventListener('loaded', applyTexture);
       applyTexture();
     }
 
-    // Asignar textura Three.js a la tarjeta 3D de descripción
-    if (this.descPlane && descData) {
-      const descTexture = new THREE.CanvasTexture(descData.canvas);
-      descTexture.minFilter = THREE.LinearFilter;
-      descTexture.magFilter = THREE.LinearFilter;
-      const applyDescTexture = () => {
-        const mesh = this.descPlane.getObject3D('mesh');
-        if (mesh && mesh.material) {
-          mesh.material.map = descTexture;
-          mesh.material.needsUpdate = true;
-        }
+    if (this.stem) {
+      const applyStem = () => {
+        const mesh = this.stem.getObject3D('mesh');
+        if (mesh) mesh.renderOrder = 1;
       };
-      this.descPlane.addEventListener('loaded', applyDescTexture);
-      applyDescTexture();
+      this.stem.addEventListener('loaded', applyStem);
+      applyStem();
     }
 
     el.peakMarkerComponent = this;
     this.hideTimeout = null;
     this.closeTimer = null;
 
-    // Conectar eventos a todos los elementos interactivos del hito
-    const interactiveItems = [el, this.hitbox, this.dot, this.stem, this.pillPlane, this.descPlane];
+    // Conectar eventos a los elementos interactivos del hito
+    const interactiveItems = [el, this.hitbox, this.dot, this.stem, this.pillPlane];
 
     const handleHover = () => {
       if (this.hideTimeout) {
@@ -840,6 +814,7 @@ AFRAME.registerComponent('peak-marker', {
         this.hideTimeout = null;
       }
       this.showPill(true);
+      showFloatingCard(data);
       speakPeak(data);
     };
 
@@ -848,6 +823,7 @@ AFRAME.registerComponent('peak-marker', {
       this.hideTimeout = setTimeout(() => {
         if (!AppState.selectedPeak || AppState.selectedPeak.id !== data.id) {
           this.showPill(false);
+          hideFloatingCard();
         }
         this.hideTimeout = null;
       }, 300);
@@ -858,6 +834,7 @@ AFRAME.registerComponent('peak-marker', {
       if (this.hideTimeout) clearTimeout(this.hideTimeout);
       window.selectPeak(data);
       this.showPill(true);
+      showFloatingCard(data);
       speakPeak(data);
     };
 
@@ -932,13 +909,8 @@ function renderScene(sceneId) {
     btn.classList.toggle('active', btn.dataset.scene === sceneId);
   });
 
-  // Actualizar Widget de Ubicación PeakVisor
-  const vpName = document.getElementById('viewpoint-name');
-  const vpAlt = document.getElementById('viewpoint-alt');
-  if (vpName) vpName.textContent = sceneData.shortName || sceneData.name.replace('Cumbre de ', '');
-  if (vpAlt) vpAlt.textContent = sceneData.altitude;
+  // Actualizar rotación de la brújula de suelo para la escena actual
   updateFloorCompassRotation();
-  lastVrHeading = null;
 
   const sky = document.getElementById('sky-360');
   sky.setAttribute('src', sceneData.image);
@@ -1002,6 +974,7 @@ window.selectPeak = function (peakData) {
   if (activeChip) activeChip.classList.add('active');
 
   document.getElementById('peak-info-card').classList.add('visible');
+  showFloatingCard(peakData);
   speakPeak(peakData);
 };
 
@@ -1013,6 +986,7 @@ window.closePeakCard = function () {
     if (el.peakMarkerComponent) el.peakMarkerComponent.showPill(false);
   });
 
+  hideFloatingCard();
   AppState.selectedPeak = null;
 };
 
@@ -1295,21 +1269,12 @@ function updateCameraOrientationLoop() {
       AppState.currentYaw = Math.round(yaw * 10) / 10;
       AppState.currentPitch = Math.round(pitch * 10) / 10;
 
-      // Actualizar Brújula Oficial PeakVisor (grados dinámicos y cuña FOV rotativa)
+      // Cálculo del rumbo respecto al Norte de la escena
       const sceneData = window.LIVE_SCENES[AppState.currentSceneId] || {};
-      const baseHeading = (sceneData.baseHeading !== undefined) ? sceneData.baseHeading : -99;
+      const baseHeading = (sceneData.baseHeading !== undefined) ? sceneData.baseHeading : -101;
       let currentHeading = Math.round(baseHeading + yaw);
       while (currentHeading > 180) currentHeading -= 360;
       while (currentHeading <= -180) currentHeading += 360;
-
-      const headingEl = document.getElementById('compass-heading');
-      const fovWedgeEl = document.getElementById('compass-fov-wedge');
-      if (headingEl) {
-        headingEl.textContent = `${currentHeading}°`;
-      }
-      if (fovWedgeEl) {
-        fovWedgeEl.style.transform = `rotate(${currentHeading}deg)`;
-      }
 
       if (AppState.calibrationMode) {
         const calibYaw = document.getElementById('calib-yaw');
@@ -1319,9 +1284,6 @@ function updateCameraOrientationLoop() {
         if (calibPitch) calibPitch.textContent = `${AppState.currentPitch}°`;
         if (calibCompass) calibCompass.textContent = `${currentHeading}°`;
       }
-
-      // Actualizar Widget HUD flotante en Realidad Virtual
-      updateVrHudCompass(currentHeading, sceneData);
     }
   }
   requestAnimationFrame(updateCameraOrientationLoop);
@@ -1432,21 +1394,16 @@ function setupDesktopMouseInteractions() {
 function setupCursorMode() {
   const sceneEl = document.querySelector('a-scene');
   const gaze = document.getElementById('gaze-cursor');
-  const vrHudCompass = document.getElementById('vr-hud-compass');
 
-  if (sceneEl) {
-    if (gaze) gaze.setAttribute('visible', 'false');
-    if (vrHudCompass) vrHudCompass.setAttribute('visible', 'false');
+  if (sceneEl && gaze) {
+    gaze.setAttribute('visible', 'false');
 
     sceneEl.addEventListener('enter-vr', () => {
-      if (gaze) gaze.setAttribute('visible', 'true');
-      if (vrHudCompass) vrHudCompass.setAttribute('visible', 'true');
-      lastVrHeading = null; // forzar actualización inicial del HUD
+      gaze.setAttribute('visible', 'true');
     });
 
     sceneEl.addEventListener('exit-vr', () => {
-      if (gaze) gaze.setAttribute('visible', 'false');
-      if (vrHudCompass) vrHudCompass.setAttribute('visible', 'false');
+      gaze.setAttribute('visible', 'false');
     });
   }
 }

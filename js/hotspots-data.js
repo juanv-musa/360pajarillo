@@ -8,7 +8,7 @@ const SCENES_DATA = {
     "name": "Cumbre de Pico Mágina",
     "shortName": "Mágina",
     "altitude": "2 165 m",
-    "baseHeading": -99,
+    "baseHeading": -101,
     "image": "assets/images/foto_360_magina.jpg",
     "skyRotation": "0 0 0",
     "hotspots": [
@@ -18,7 +18,7 @@ const SCENES_DATA = {
         "elevation": "2.036 m",
         "yaw": 0.0,
         "pitch": 1.5,
-        "desc": "Segunda cumbre más alta de Sierra Mágina. En su cima se alza la estación de telecomunicaciones y vértice geodésico, dominando la Vega de Jaén."
+        "desc": "En la cima hay estación de telecomunicaciones que da cobertura a toda la provincia de Jaén."
       },
       {
         "id": "pena-jaen",
