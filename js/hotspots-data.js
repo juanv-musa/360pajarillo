@@ -29,7 +29,7 @@ const SCENES_DATA = {
         "desc": "Se encuentra coronada por una cruz metálica y un hito con una placa conmemorativa."
       },
       {
-        "id": "peak-1794218184781",
+        "id": "peak-1794228184781",
         "title": "Cerro Aznaitín",
         "elevation": "1.735 m",
         "yaw": -83.9,
@@ -139,25 +139,105 @@ const SCENES_DATA = {
     "name": "Cumbre de Miramundos",
     "shortName": "Miramundos",
     "altitude": "2.077 m",
-    "baseHeading": -45,
+    "baseHeading": -130,
     "image": "assets/images/foto_360_miramundos.jpg",
     "skyRotation": "0 -90 0",
     "hotspots": [
       {
-        "id": "pena-miramundos",
-        "title": "Peña de Miramundos",
-        "elevation": "2.077 m",
-        "yaw": 24,
-        "pitch": -2,
-        "desc": "Espigón calizo culminante sobre el anfiteatro kárstico de Sierra Mágina."
+        "id": "peak-1794228405927",
+        "title": "Cerro Aznaitín",
+        "elevation": "1.735 m",
+        "yaw": 107,
+        "pitch": 0.8,
+        "desc": "En su cumbre se juntan los términos municipales de Jimena, Torres y Albanchez de Mágina."
       },
       {
-        "id": "refugio-miramundos",
-        "title": "Refugio Miramundos",
-        "elevation": "2.077 m",
-        "yaw": -5,
-        "pitch": -4,
-        "desc": "Histórica caseta forestal levantada en mampostería tradicional de piedra seca en la cumbre."
+        "id": "peak-1794228603142",
+        "title": "Alto de La Serrezuela",
+        "elevation": "1.362 m",
+        "yaw": 155.6,
+        "pitch": -1.8,
+        "desc": "Pequeño macizo montañoso, enclavado entre los municipios de Bedmar y Jódar."
+      },
+      {
+        "id": "peak-1794228850652",
+        "title": "Morra del Peleo",
+        "elevation": "1.606 m",
+        "yaw": 177,
+        "pitch": -7.6,
+        "desc": "La \"Tríada\" de la Sierra de la Cruz: Junto al Morro de Cabacillas (1.604 m) y los Morros de Camaramarila."
+      },
+      {
+        "id": "peak-1794229056449",
+        "title": "Golondrina",
+        "elevation": "1.139 m",
+        "yaw": 172.7,
+        "pitch": -4.2,
+        "desc": "En la zona se localizan importantes estaciones con pinturas rupestres."
+      },
+      {
+        "id": "peak-1794229186776",
+        "title": "El Yelmo",
+        "elevation": "1.808 m",
+        "yaw": -179.3,
+        "pitch": -7.4,
+        "desc": "El Yelmo es uno de los enclaves de referencia en España para la práctica del parapente y el vuelo libre"
+      },
+      {
+        "id": "peak-1794229692448",
+        "title": "Cerro Gordo",
+        "elevation": "1.528 m",
+        "yaw": -126.9,
+        "pitch": -9.3,
+        "desc": "Se ubica en el término municipal de Bélmez de la Moraleda, delimitando por su vertiente oeste con el imponente Barranco del Gargantón."
+      },
+      {
+        "id": "peak-1794229833670",
+        "title": "Cerro Postrero",
+        "elevation": "1.444 m",
+        "yaw": -91.9,
+        "pitch": 0,
+        "desc": "Muy cerca del municipio de Pedro Martínez, en la provincia de Granada, y forma parte del entorno del Geoparque de Granada."
+      },
+      {
+        "id": "peak-1794229940838",
+        "title": "Pico Mulhacén",
+        "elevation": "3.479 m",
+        "yaw": -64.2,
+        "pitch": 2.2,
+        "desc": "El Mulhacén es el pico más alto de la península ibérica y el segundo de España tras el Teide en Tenerife (Islas Canarias)."
+      },
+      {
+        "id": "peak-1794230060471",
+        "title": "Pico Veleta",
+        "elevation": "3.396 m",
+        "yaw": -60.7,
+        "pitch": 2,
+        "desc": "En su cumbre confluyen los términos municipales de Dílar, Monachil, Güéjar Sierra y Capileira."
+      },
+      {
+        "id": "peak-1794230355611",
+        "title": "Alta Coloma",
+        "elevation": "1.696 m",
+        "yaw": -20.4,
+        "pitch": 0.3,
+        "desc": "En su interior se encuentra el acuífero de Alta Coloma, que abastece al Nacimiento de Arbuniel."
+      },
+      {
+        "id": "peak-1794231294883",
+        "title": "Pico Mágina",
+        "elevation": "2.165 m",
+        "yaw": 30,
+        "pitch": 3.9,
+        "desc": "Es el pico más alto de esta provincia de Jaén y se encuentra en la divisoria de los términos municipales de Albanchez de Mágina y de Huelma."
+      },
+      {
+        "id": "peak-1794231387426",
+        "title": "Cerro Cárceles",
+        "elevation": "2.054 m",
+        "yaw": 63.2,
+        "pitch": 2.2,
+        "desc": "Se encuentra en la cuerda principal al norte del Pico Mágina, muy cerca de otras cumbres conocidas como Peña Jaén y el Cerro Ponce."
       }
     ]
   }
