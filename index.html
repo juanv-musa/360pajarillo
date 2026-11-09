@@ -141,6 +141,35 @@
   </div>
 
   <!-- ==========================================================================
+       WIDGET PEAKVISOR: PUNTO DE VISTA Y BRÚJULA DINÁMICA (Modo Edición / App)
+       ========================================================================== -->
+  <div class="viewpoint-compass-widget" id="viewpoint-compass" title="Clic para calibrar rumbo de la brújula" onclick="window.promptCalibrateCompass()">
+    <div class="viewpoint-info">
+      <div class="viewpoint-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#00C4D6">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+      </div>
+      <div class="viewpoint-texts">
+        <span class="viewpoint-name" id="viewpoint-name">Mágina</span>
+        <span class="viewpoint-alt" id="viewpoint-alt">2 165 m</span>
+      </div>
+    </div>
+
+    <div class="compass-dial-wrap">
+      <div class="compass-ring-outer"></div>
+      <div class="compass-disc" id="compass-disc">
+        <div class="compass-fov-wedge" id="compass-fov-wedge"></div>
+        <span class="compass-mark mark-n"><span class="n-arrow">▲</span>N</span>
+        <span class="compass-mark mark-e">E</span>
+        <span class="compass-mark mark-s">S</span>
+        <span class="compass-mark mark-w">W</span>
+        <div class="compass-center-heading" id="compass-heading">-101°</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        ESCENA 3D WEBXR
        ========================================================================== -->
   <a-scene 
@@ -179,14 +208,6 @@
                width="3.2"
                height="3.2"
                material="transparent: true; shader: flat; side: double; depthTest: true; opacity: 0.95"></a-plane>
-    </a-entity>
-
-    <!-- Tarjeta Flotante 3D de Lectura Cómoda en VR (Cerca del usuario: 2.0 metros) -->
-    <a-entity id="vr-floating-card-rig" position="0 0 0" scale="0.001 0.001 0.001" visible="false">
-      <a-plane id="vr-floating-card-mesh"
-               width="1.6"
-               height="0.8"
-               material="transparent: true; shader: flat; side: double; depthTest: false"></a-plane>
     </a-entity>
 
     <a-sky id="sky-360" 

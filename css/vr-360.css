@@ -116,6 +116,214 @@ body, html {
   color: #00C4D6;
 }
 
+/* ==========================================================================
+   WIDGET PEAKVISOR: PUNTO DE VISTA Y BRÚJULA DINÁMICA (Modo Edición / Escritorio)
+   ========================================================================== */
+.viewpoint-compass-widget {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  background: rgba(14, 22, 19, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 36px;
+  padding: 8px 10px 8px 18px;
+  gap: 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 998;
+  pointer-events: auto;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.viewpoint-compass-widget:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: rgba(0, 196, 214, 0.5);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 196, 214, 0.25);
+}
+
+.viewpoint-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.viewpoint-texts {
+  display: flex;
+  flex-direction: column;
+}
+
+.viewpoint-name {
+  color: #FFFFFF;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.viewpoint-alt {
+  color: #D2DDD8;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.compass-dial-wrap {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compass-ring-outer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid #EE5959;
+  box-shadow: 0 0 10px rgba(238, 89, 89, 0.35);
+}
+
+.compass-ring-outer::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #EE5959;
+  z-index: 5;
+}
+
+.compass-disc {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #0B110F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.compass-fov-wedge {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(
+    from -30deg at 50% 50%,
+    rgba(238, 89, 89, 0.45) 0deg,
+    rgba(238, 89, 89, 0.45) 60deg,
+    transparent 60deg,
+    transparent 360deg
+  );
+  transform-origin: center center;
+  transition: transform 0.08s linear;
+}
+
+.compass-mark {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 700;
+  color: #FFFFFF;
+  user-select: none;
+}
+
+.compass-mark.mark-n {
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #EE5959;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  z-index: 3;
+}
+
+.compass-mark.mark-n .n-arrow {
+  font-size: 6px;
+  margin-bottom: 1px;
+}
+
+.compass-mark.mark-s {
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #8C9994;
+  font-size: 9px;
+  font-weight: 700;
+  z-index: 3;
+}
+
+.compass-mark.mark-e {
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8C9994;
+  font-size: 9px;
+  font-weight: 700;
+  z-index: 3;
+}
+
+.compass-mark.mark-w {
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8C9994;
+  font-size: 9px;
+  font-weight: 700;
+  z-index: 3;
+}
+
+.compass-center-heading {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px dotted rgba(255, 255, 255, 0.7);
+  background: #0B110F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.5px;
+  z-index: 4;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* Ocultar widget 2D cuando se entra en modo VR */
+body.a-scene-vr .viewpoint-compass-widget,
+.a-scene-vr .viewpoint-compass-widget {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .viewpoint-compass-widget {
+    bottom: 74px;
+    right: 12px;
+    padding: 6px 8px 6px 14px;
+    gap: 10px;
+    border-radius: 28px;
+  }
+  .viewpoint-name { font-size: 0.95rem; }
+  .viewpoint-alt { font-size: 0.8rem; }
+  .compass-dial-wrap { width: 52px; height: 52px; }
+  .compass-center-heading { font-size: 0.8rem; }
+}
+
 
 
 .btn-hud-vr {
