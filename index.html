@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Sierra Mágina 360 · Visor de Cumbres</title>
 
-  <link rel="stylesheet" href="./css/vr-360.css?v=2.0.0">
+  <link rel="stylesheet" href="./css/vr-360.css?v=2.0.1">
 
   <!-- A-Frame WebXR Engine (v1.6.0) -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 
   <!-- Lógica y Base de Datos con Versionado Cache-Busting -->
-  <script src="./js/hotspots-data.js?v=2.0.0"></script>
-  <script src="./js/app-360.js?v=2.0.0"></script>
+  <script src="./js/hotspots-data.js?v=2.0.1"></script>
+  <script src="./js/app-360.js?v=2.0.1"></script>
 </head>
 <body>
 
@@ -129,15 +129,11 @@
       <div class="screen-card" onclick="window.enterSceneFromPortal('magina')">
         <div class="screen-thumb-wrap">
           <img src="./assets/images/magina_preview.jpg" alt="Pico Mágina" class="screen-thumb">
-          <span class="screen-badge">15 Cumbres</span>
         </div>
         <div class="screen-content">
           <div class="screen-title">⛰️ Pico Mágina</div>
           <div class="screen-alt">2.165 m</div>
           <p class="screen-desc">La cumbre más alta de la provincia de Jaén. Horizonte 360° hacia Sierra Nevada, Cazorla y Jaén capital.</p>
-          <button class="btn-screen-action">
-            <span>👁️</span> Explorar Cumbre 360°
-          </button>
         </div>
       </div>
 
@@ -145,15 +141,11 @@
       <div class="screen-card" onclick="window.enterSceneFromPortal('miramundos')">
         <div class="screen-thumb-wrap">
           <img src="./assets/images/miramundos_preview.jpg" alt="Refugio Miramundos" class="screen-thumb">
-          <span class="screen-badge">12 Cumbres</span>
         </div>
         <div class="screen-content">
           <div class="screen-title">🏔️ Refugio Miramundos</div>
           <div class="screen-alt">2.077 m</div>
           <p class="screen-desc">Histórico refugio de piedra seca sobre el anfiteatro kárstico con vistas a la Cuerda de Mágina y valles.</p>
-          <button class="btn-screen-action">
-            <span>👁️</span> Explorar Refugio 360°
-          </button>
         </div>
       </div>
 
@@ -161,22 +153,14 @@
       <div class="screen-card" onclick="window.enterSceneFromPortal('nevero')">
         <div class="screen-thumb-wrap">
           <img src="./assets/images/nevero_preview.jpg" alt="Nevero de Piedra Seca" class="screen-thumb">
-          <span class="screen-badge">Patrimonio UNESCO</span>
         </div>
         <div class="screen-content">
           <div class="screen-title">❄️ Nevero de Piedra Seca</div>
           <div class="screen-alt">2.100 m</div>
           <p class="screen-desc">Construcción tradicional para conservación de nieve. Falsa cúpula y técnica sin mortero.</p>
-          <button class="btn-screen-action">
-            <span>🏛️</span> Explorar Nevero 3D
-          </button>
         </div>
       </div>
     </div>
-
-    <button class="btn-back-intro" onclick="window.backToWelcomeModal()" style="margin-top: 22px; background: transparent; border: 1px solid rgba(255,255,255,0.25); color: #FFF; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
-      ⬅ Volver a Portada
-    </button>
   </div>
 
   <!-- ==========================================================================
@@ -243,17 +227,16 @@
        ========================================================================== -->
   <a-scene 
     renderer="antialias: true; colorManagement: true; alpha: true; highRefreshRate: true;"
-    webxr="referenceSpaceType: local-floor; requiredFeatures: local-floor;"
-    vr-mode-ui="enabled: false"
-    loading-screen="dotsColor: #00C4D6; backgroundColor: #050806">
+    webxr="referenceSpaceType: local-floor; requiredFeatures: local-floor; optionalFeatures: hit-test, dom-overlay;"
+    vr-mode-ui="enabled: false">
 
     <!-- Cursor de ratón universal para pantalla de escritorio (Mac / PC) -->
     <a-entity id="mouse-cursor" 
               cursor="rayOrigin: mouse" 
               raycaster="objects: .clickable; interval: 50"></a-entity>
 
-    <a-entity id="camera-rig" position="0 1.6 0">
-      <a-camera id="head-camera" look-controls="reverseMouseDrag: false" wasd-controls="enabled: false">
+    <a-entity id="camera-rig" position="0 0 0">
+      <a-camera id="head-camera" position="0 1.6 0" look-controls="reverseMouseDrag: false" wasd-controls="enabled: false">
         <!-- Retícula de mirada VR sutil -->
         <a-entity id="gaze-cursor"
                   cursor="fuse: true; fuseTimeout: 1200"
@@ -306,31 +289,31 @@
     <!-- ======================================================================
          REALIDAD MIXTA (PASSTHROUGH): 1. PASTILLA BIENVENIDA Y 2. 3 PANTALLAS FLOTANTES
          ====================================================================== -->
-    <!-- 1. Pastilla Principal de Bienvenida 3D en VR (Flota en la sala real) -->
-    <a-entity id="vr-welcome-panel" position="0 1.5 -1.8" visible="false">
-      <a-plane id="vr-welcome-plane" class="clickable" width="2.2" height="1.38"
+    <!-- 1. Pastilla Principal de Bienvenida 3D en VR (Flota en la sala real a la altura de los ojos) -->
+    <a-entity id="vr-welcome-panel" position="0 1.55 -2.1" visible="false">
+      <a-plane id="vr-welcome-plane" class="clickable" width="2.3" height="1.45"
                material="transparent: true; shader: flat; side: double; depthTest: true"></a-plane>
-      <a-plane id="vr-btn-start-exp" class="clickable" position="0 -0.2 0.02" width="1.1" height="0.22"
+      <a-plane id="vr-btn-start-exp" class="clickable" position="0 -0.22 0.02" width="1.2" height="0.25"
                material="opacity: 0.001; transparent: true"></a-plane>
     </a-entity>
 
-    <!-- 2. Menú de 3 Pantallas Flotantes 3D en VR (Arco espacial en la sala real) -->
+    <!-- 2. Menú de 3 Pantallas Flotantes 3D en VR (Arco majestuoso en la sala real a la altura de los ojos) -->
     <a-entity id="vr-screens-menu" position="0 0 0" visible="false">
       <!-- Pantalla 1: Pico Mágina (Izquierda) -->
-      <a-entity id="portal-card-magina" class="clickable portal-screen" position="-1.4 1.5 -2.1" rotation="0 18 0">
-        <a-plane id="portal-plane-magina" class="clickable" width="1.25" height="1.35"
+      <a-entity id="portal-card-magina" class="clickable portal-screen" position="-1.7 1.55 -2.3" rotation="0 22 0">
+        <a-plane id="portal-plane-magina" class="clickable" width="1.55" height="1.45"
                  material="transparent: true; shader: flat; side: double; depthTest: true"></a-plane>
       </a-entity>
 
       <!-- Pantalla 2: Refugio Miramundos (Centro) -->
-      <a-entity id="portal-card-miramundos" class="clickable portal-screen" position="0 1.5 -2.25" rotation="0 0 0">
-        <a-plane id="portal-plane-miramundos" class="clickable" width="1.25" height="1.35"
+      <a-entity id="portal-card-miramundos" class="clickable portal-screen" position="0 1.55 -2.45" rotation="0 0 0">
+        <a-plane id="portal-plane-miramundos" class="clickable" width="1.55" height="1.45"
                  material="transparent: true; shader: flat; side: double; depthTest: true"></a-plane>
       </a-entity>
 
       <!-- Pantalla 3: Nevero de Piedra Seca (Derecha) -->
-      <a-entity id="portal-card-nevero" class="clickable portal-screen" position="1.4 1.5 -2.1" rotation="0 -18 0">
-        <a-plane id="portal-plane-nevero" class="clickable" width="1.25" height="1.35"
+      <a-entity id="portal-card-nevero" class="clickable portal-screen" position="1.7 1.55 -2.3" rotation="0 -22 0">
+        <a-plane id="portal-plane-nevero" class="clickable" width="1.55" height="1.45"
                  material="transparent: true; shader: flat; side: double; depthTest: true"></a-plane>
       </a-entity>
     </a-entity>

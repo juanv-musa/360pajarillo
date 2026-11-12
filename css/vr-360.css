@@ -31,6 +31,19 @@ body, html {
 }
 
 /* ==========================================================================
+   SOPORTE WEBXR PASSTHROUGH (REALIDAD MIXTA TRANSPARENTE EN META QUEST)
+   ========================================================================== */
+body.in-webxr,
+body.in-webxr html,
+html.a-html,
+body.a-body,
+.a-scene-vr,
+.a-canvas {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* ==========================================================================
    BARRA SUPERIOR (MUSEUM HUD)
    ========================================================================== */
 .museum-hud {
@@ -399,8 +412,8 @@ body.a-scene-vr .viewpoint-compass-widget,
 }
 
 .screen-card {
-  background: rgba(14, 22, 17, 0.9);
-  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: rgba(14, 22, 17, 0.94);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
@@ -413,12 +426,12 @@ body.a-scene-vr .viewpoint-compass-widget,
 .screen-card:hover {
   transform: translateY(-8px) scale(1.02);
   border-color: var(--c-gold);
-  box-shadow: 0 20px 48px rgba(0, 196, 214, 0.3);
+  box-shadow: 0 20px 48px rgba(0, 196, 214, 0.35);
 }
 
 .screen-thumb-wrap {
   width: 100%;
-  height: 180px;
+  height: 200px;
   position: relative;
   overflow: hidden;
   background: #0B130E;
@@ -436,68 +449,40 @@ body.a-scene-vr .viewpoint-compass-widget,
 }
 
 .screen-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(14, 22, 17, 0.88);
-  border: 1px solid var(--c-gold);
-  color: var(--c-gold);
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  display: none !important;
 }
 
 .screen-content {
-  padding: 18px 20px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .screen-title {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: #FFFFFF;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .screen-alt {
   color: #00C4D6;
   font-weight: 700;
-  font-size: 0.95rem;
-  margin-bottom: 8px;
+  font-size: 1.05rem;
+  margin-bottom: 10px;
 }
 
 .screen-desc {
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   color: #C0C8C3;
-  line-height: 1.45;
-  margin-bottom: 16px;
+  line-height: 1.5;
+  margin-bottom: 0;
   flex: 1;
 }
 
 .btn-screen-action {
-  background: linear-gradient(135deg, var(--c-gold) 0%, #B8860B 100%);
-  color: #0F1712;
-  font-weight: 700;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: none;
-  font-size: 0.88rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.3);
-  transition: all 0.2s ease;
-}
-
-.screen-card:hover .btn-screen-action {
-  background: linear-gradient(135deg, #FFE082 0%, var(--c-gold) 100%);
-  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.5);
+  display: none !important;
 }
 
 @media (max-width: 900px) {

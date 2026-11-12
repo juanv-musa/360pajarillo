@@ -18,7 +18,7 @@ const AppState = {
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "2.0.0";
+const CURRENT_DATA_VERSION = "2.0.1";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
@@ -635,15 +635,18 @@ AFRAME.registerComponent('peak-marker', {
     const interactiveItems = [el, this.hitbox, this.dot, this.stem, this.pillPlane];
 
     const handleHover = () => {
+      // Ignorar si estamos en modo menú de pantallas o bienvenida
+      if (AppState.flowState !== 'in_scene') return;
       if (this.hideTimeout) {
         clearTimeout(this.hideTimeout);
         this.hideTimeout = null;
       }
       this.showPill(true);
-      speakPeak(data);
+      // SILENCIO: No locutar por voz al pasar el puntero (solo al hacer clic explícito)
     };
 
     const handleLeave = () => {
+      if (AppState.flowState !== 'in_scene') return;
       if (this.hideTimeout) clearTimeout(this.hideTimeout);
       this.hideTimeout = setTimeout(() => {
         if (!AppState.selectedPeak || AppState.selectedPeak.id !== data.id) {
@@ -655,10 +658,11 @@ AFRAME.registerComponent('peak-marker', {
 
     const handleClick = (evt) => {
       if (evt && evt.stopPropagation) evt.stopPropagation();
+      if (AppState.flowState !== 'in_scene') return;
       if (this.hideTimeout) clearTimeout(this.hideTimeout);
       window.selectPeak(data);
       this.showPill(true);
-      speakPeak(data);
+      speakPeak(data); // Locución de voz ÚNICAMENTE con clic deliberado
     };
 
     interactiveItems.forEach(item => {
@@ -746,16 +750,22 @@ function renderScene(sceneId) {
   sky.setAttribute('rotation', sceneData.skyRotation || "0 0 0");
 
   const scene3dRig = document.getElementById('scene-3d-rig');
+  const container = document.getElementById('hotspots-container');
+
+  // Solo mostrar la panorámica, modelo 3D y marcas de cumbres si ya estamos dentro de la experiencia
+  const isInScene = AppState.flowState === 'in_scene';
+  sky.setAttribute('visible', isInScene ? 'true' : 'false');
+  if (container) container.setAttribute('visible', isInScene ? 'true' : 'false');
+
   if (sceneData.is3DModel) {
-    if (scene3dRig) scene3dRig.setAttribute('visible', 'true');
+    if (scene3dRig) scene3dRig.setAttribute('visible', isInScene ? 'true' : 'false');
     sky.setAttribute('material', 'opacity: 0.65; transparent: true');
   } else {
     if (scene3dRig) scene3dRig.setAttribute('visible', 'false');
     sky.setAttribute('material', 'opacity: 1.0; transparent: false');
   }
 
-  const container = document.getElementById('hotspots-container');
-  while (container.firstChild) {
+  while (container && container.firstChild) {
     container.removeChild(container.firstChild);
   }
 
@@ -768,7 +778,7 @@ function renderScene(sceneId) {
     entity.setAttribute('look-at-camera', '');
     entity.setAttribute('peak-marker', hs);
     entity.setAttribute('class', 'clickable');
-    container.appendChild(entity);
+    if (container) container.appendChild(entity);
   });
 
   renderPeakStrip(sceneData.hotspots);
@@ -1415,27 +1425,24 @@ function setupVRScreens() {
     {
       id: 'magina',
       planeId: 'portal-plane-magina',
-      title: 'Pico Mágina',
+      title: '⛰️ Pico Mágina',
       alt: '2.165 m',
-      badge: '15 CUMBRES',
       desc: 'La cumbre más alta de Jaén. Horizonte 360° hacia Sierra Nevada y Cazorla.',
       imgSrc: './assets/images/magina_preview.jpg'
     },
     {
       id: 'miramundos',
       planeId: 'portal-plane-miramundos',
-      title: 'Refugio Miramundos',
+      title: '🏔️ Refugio Miramundos',
       alt: '2.077 m',
-      badge: '12 CUMBRES',
       desc: 'Histórico refugio de piedra seca sobre el anfiteatro kárstico de Sierra Mágina.',
       imgSrc: './assets/images/miramundos_preview.jpg'
     },
     {
       id: 'nevero',
       planeId: 'portal-plane-nevero',
-      title: 'Nevero de Piedra Seca',
+      title: '❄️ Nevero de Piedra Seca',
       alt: '2.100 m',
-      badge: 'UNESCO 3D',
       desc: 'Construcción tradicional para conservación de nieve. Falsa cúpula de lajas.',
       imgSrc: './assets/images/nevero_preview.jpg'
     }
@@ -1446,8 +1453,8 @@ function setupVRScreens() {
     if (!planeEl) return;
 
     const canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 860;
+    canvas.width = 1024;
+    canvas.height = 960;
     const ctx = canvas.getContext('2d');
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
@@ -1470,79 +1477,50 @@ function setupVRScreens() {
         ctx.closePath();
       }
 
-      // Sombra
+      // Fondo de la tarjeta (Vidrio oscuro translúcido con sombra)
       ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.7)';
-      ctx.shadowBlur = 24;
+      ctx.shadowColor = 'rgba(0,0,0,0.75)';
+      ctx.shadowBlur = 32;
       ctx.fillStyle = 'rgba(12, 20, 16, 0.94)';
-      roundRect(16, 16, 768, 828, 32);
+      roundRect(16, 16, 992, 928, 36);
       ctx.fill();
       ctx.restore();
 
-      // Borde dorado elegante
-      ctx.strokeStyle = 'rgba(212, 175, 55, 0.55)';
-      ctx.lineWidth = 3;
-      roundRect(16, 16, 768, 828, 32);
+      // Borde dorado elegante y estilizado
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.65)';
+      ctx.lineWidth = 4;
+      roundRect(16, 16, 992, 928, 36);
       ctx.stroke();
 
-      // Imagen thumbnail en la mitad superior
+      // Imagen thumbnail en la mitad superior (Limpia, sin insignias que tapen)
       ctx.save();
-      roundRect(24, 24, 752, 420, 24);
+      roundRect(24, 24, 976, 560, 28);
       ctx.clip();
       if (imgLoaded) {
-        ctx.drawImage(imgLoaded, 24, 24, 752, 420);
+        ctx.drawImage(imgLoaded, 24, 24, 976, 560);
       } else {
         ctx.fillStyle = '#1B2C24';
-        ctx.fillRect(24, 24, 752, 420);
+        ctx.fillRect(24, 24, 976, 560);
       }
       ctx.restore();
 
-      // Badge en miniatura
-      ctx.fillStyle = 'rgba(12, 20, 16, 0.88)';
-      roundRect(752 - 200, 40, 180, 44, 14);
-      ctx.fill();
-      ctx.strokeStyle = '#D4AF37';
-      ctx.lineWidth = 2;
-      roundRect(752 - 200, 40, 180, 44, 14);
-      ctx.stroke();
-      ctx.fillStyle = '#D4AF37';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(s.badge, 752 - 110, 62);
-
       // Título
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = 'bold 54px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(s.title, 48, 495);
+      ctx.fillText(s.title, 52, 660);
 
       // Altitud
       ctx.fillStyle = '#00C4D6';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillText(s.alt, 48, 540);
+      ctx.font = 'bold 38px sans-serif';
+      ctx.fillText(s.alt, 52, 725);
 
       // Descripción
       ctx.fillStyle = '#C8D2CD';
-      ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText(s.desc, 48, 590);
+      ctx.font = '30px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(s.desc, 52, 805);
 
-      // Botón dorado de acción
-      ctx.save();
-      const btnGrad = ctx.createLinearGradient(48, 730, 752, 800);
-      btnGrad.addColorStop(0, '#D4AF37');
-      btnGrad.addColorStop(1, '#B8860B');
-      ctx.fillStyle = btnGrad;
-      roundRect(48, 730, 704, 70, 18);
-      ctx.fill();
-
-      ctx.fillStyle = '#0F1712';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('👁️ Explorar en 360°', 400, 765);
-      ctx.restore();
-
+      // Toda la tarjeta es clicable e interactiva (sin botones redundantes)
       texture.needsUpdate = true;
     };
 
@@ -1705,21 +1683,35 @@ window.startExperience = function () {
   const vrWelcomePanel = document.getElementById('vr-welcome-panel');
   const vrScreensMenu = document.getElementById('vr-screens-menu');
   const sky = document.getElementById('sky-360');
+  const floorCompass = document.getElementById('vr-floor-compass-rig');
+  const hotspotsContainer = document.getElementById('hotspots-container');
 
   if (modal) modal.classList.add('hidden');
   if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
+  if (sky) sky.setAttribute('visible', 'false');
+  if (floorCompass) floorCompass.setAttribute('visible', 'false');
+  if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'false');
+
+  // SILENCIO TOTAL EN EL MENÚ: Nada de ruido de fondo ni locución al navegar
+  window.mountainWind.stop();
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
 
   const sceneEl = document.querySelector('a-scene');
-  const isVR = sceneEl && sceneEl.is('vr-mode');
+  const isVR = sceneEl && (sceneEl.is('vr-mode') || sceneEl.is('ar-mode'));
 
   if (isVR) {
-    if (sky) sky.setAttribute('visible', 'false');
     if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'true');
   } else {
     if (screensModal) screensModal.classList.add('visible');
   }
 
-  window.mountainWind.start();
+  // Si está en Meta Quest Browser y todavía no ha entrado en AR, entrar automáticamente
+  const isQuest = /OculusBrowser|Quest/i.test(navigator.userAgent);
+  if (isQuest && sceneEl && !isVR) {
+    window.enterVRMode();
+  }
 };
 
 window.openScreensMenu = function () {
@@ -1733,14 +1725,23 @@ window.backToWelcomeModal = function () {
   const vrWelcomePanel = document.getElementById('vr-welcome-panel');
   const vrScreensMenu = document.getElementById('vr-screens-menu');
   const sky = document.getElementById('sky-360');
+  const floorCompass = document.getElementById('vr-floor-compass-rig');
+  const hotspotsContainer = document.getElementById('hotspots-container');
 
   if (screensModal) screensModal.classList.remove('visible');
   if (welcomeModal) welcomeModal.classList.remove('hidden');
 
+  window.mountainWind.stop();
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+
   const sceneEl = document.querySelector('a-scene');
-  const isVR = sceneEl && sceneEl.is('vr-mode');
+  const isVR = sceneEl && (sceneEl.is('vr-mode') || sceneEl.is('ar-mode'));
   if (isVR) {
     if (sky) sky.setAttribute('visible', 'false');
+    if (floorCompass) floorCompass.setAttribute('visible', 'false');
+    if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'false');
     if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'false');
     if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'true');
   }
@@ -1758,22 +1759,32 @@ window.enterSceneFromPortal = function (sceneId) {
 
   if (screensModal) screensModal.classList.remove('visible');
 
+  const activate = () => {
+    if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'false');
+    if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
+
+    renderScene(sceneId);
+
+    if (sky) sky.setAttribute('visible', 'true');
+    if (floorCompass) floorCompass.setAttribute('visible', 'true');
+    if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'true');
+
+    // El viento se inicia ÚNICAMENTE al adentrarse en la cumbre exterior
+    if (sceneId !== 'nevero') {
+      window.mountainWind.start();
+    } else {
+      window.mountainWind.stop();
+    }
+  };
+
   if (overlay) {
     overlay.setAttribute('animation', 'property: material.opacity; to: 1; dur: 250; easing: easeInOutQuad');
     setTimeout(() => {
-      if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'false');
-      if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
-
-      renderScene(sceneId);
-
-      if (sky) sky.setAttribute('visible', 'true');
-      if (floorCompass) floorCompass.setAttribute('visible', 'true');
-      if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'true');
-
+      activate();
       overlay.setAttribute('animation', 'property: material.opacity; to: 0; dur: 350; easing: easeInOutQuad');
     }, 280);
   } else {
-    renderScene(sceneId);
+    activate();
   }
 };
 
@@ -1790,35 +1801,60 @@ window.returnTo3ScreensMenu = function () {
 
   window.closePeakCard();
 
+  // Silenciar todo de inmediato al volver al menú de la sala
+  window.mountainWind.stop();
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+
+  const deactivate = () => {
+    // Modo Passthrough: Ocultar entorno virtual 360 para ver la sala física real
+    if (sky) sky.setAttribute('visible', 'false');
+    if (floorCompass) floorCompass.setAttribute('visible', 'false');
+    if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'false');
+    if (scene3dRig) scene3dRig.setAttribute('visible', 'false');
+    if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
+
+    const sceneEl = document.querySelector('a-scene');
+    const isVR = sceneEl && (sceneEl.is('vr-mode') || sceneEl.is('ar-mode'));
+
+    if (isVR) {
+      if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'true');
+    } else {
+      if (screensModal) screensModal.classList.add('visible');
+    }
+  };
+
   if (overlay) {
     overlay.setAttribute('animation', 'property: material.opacity; to: 1; dur: 250; easing: easeInOutQuad');
     setTimeout(() => {
-      // Activar Passthrough ocultando entorno virtual 360
-      if (sky) sky.setAttribute('visible', 'false');
-      if (floorCompass) floorCompass.setAttribute('visible', 'false');
-      if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'false');
-      if (scene3dRig) scene3dRig.setAttribute('visible', 'false');
-      if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
-
-      const sceneEl = document.querySelector('a-scene');
-      const isVR = sceneEl && sceneEl.is('vr-mode');
-
-      if (isVR) {
-        if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'true');
-      } else {
-        if (screensModal) screensModal.classList.add('visible');
-      }
-
+      deactivate();
       overlay.setAttribute('animation', 'property: material.opacity; to: 0; dur: 350; easing: easeInOutQuad');
     }, 280);
   } else {
-    if (screensModal) screensModal.classList.add('visible');
+    deactivate();
   }
 };
 
-window.enterVRMode = function () {
+window.enterVRMode = async function () {
   const sceneEl = document.querySelector('a-scene');
-  if (sceneEl) {
+  if (!sceneEl) return;
+
+  // En Meta Quest Browser, solicitar sesión AR inmersiva para habilitar el Passthrough de la sala
+  if (navigator.xr && navigator.xr.isSessionSupported) {
+    try {
+      const arSupported = await navigator.xr.isSessionSupported('immersive-ar');
+      if (arSupported && typeof sceneEl.enterAR === 'function') {
+        console.log('[WebXR] Solicitando sesión inmersiva AR con Passthrough...');
+        await sceneEl.enterAR();
+        return;
+      }
+    } catch (err) {
+      console.warn('[WebXR] Fallback a VR tras intento AR:', err);
+    }
+  }
+
+  if (sceneEl.enterVR) {
     sceneEl.enterVR();
   }
 };
@@ -1830,34 +1866,55 @@ function setupCursorMode() {
   if (sceneEl && gaze) {
     gaze.setAttribute('visible', 'false');
 
-    sceneEl.addEventListener('enter-vr', () => {
+    const onEnterWebXR = () => {
+      // Configurar Three.js con canal alfa transparente para Passthrough cristalino
+      if (sceneEl.renderer) {
+        sceneEl.renderer.setClearColor(0x000000, 0);
+        sceneEl.renderer.setClearAlpha(0);
+      }
+      document.body.classList.add('in-webxr');
       gaze.setAttribute('visible', 'true');
 
       const vrWelcomePanel = document.getElementById('vr-welcome-panel');
       const vrScreensMenu = document.getElementById('vr-screens-menu');
       const sky = document.getElementById('sky-360');
+      const floorCompass = document.getElementById('vr-floor-compass-rig');
+      const hotspotsContainer = document.getElementById('hotspots-container');
 
       if (AppState.flowState === 'welcome') {
         if (sky) sky.setAttribute('visible', 'false');
+        if (floorCompass) floorCompass.setAttribute('visible', 'false');
+        if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'false');
         if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'true');
         if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'false');
       } else if (AppState.flowState === 'screens_menu') {
         if (sky) sky.setAttribute('visible', 'false');
+        if (floorCompass) floorCompass.setAttribute('visible', 'false');
+        if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'false');
         if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
         if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'true');
       } else if (AppState.flowState === 'in_scene') {
         if (sky) sky.setAttribute('visible', 'true');
+        if (floorCompass) floorCompass.setAttribute('visible', 'true');
+        if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'true');
         if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
         if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'false');
       }
-    });
+    };
+
+    sceneEl.addEventListener('enter-vr', onEnterWebXR);
 
     sceneEl.addEventListener('exit-vr', () => {
+      document.body.classList.remove('in-webxr');
       gaze.setAttribute('visible', 'false');
+      window.mountainWind.stop();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     });
   }
 
-  // Atajos de botones de mando en VR para volver al menú de la sala
+  // Atajos de mandos Touch de Meta Quest para regresar a la sala y a las 3 pantallas
   window.addEventListener('bbuttondown', () => window.returnTo3ScreensMenu());
   window.addEventListener('ybuttondown', () => window.returnTo3ScreensMenu());
 }
