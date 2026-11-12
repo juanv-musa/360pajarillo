@@ -18,7 +18,7 @@ const AppState = {
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "2.0.1";
+const CURRENT_DATA_VERSION = "2.0.2";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
@@ -584,8 +584,8 @@ AFRAME.registerComponent('peak-marker', {
       <a-sphere class="peak-hitbox clickable" radius="0.85"
                 material="opacity: 0.001; transparent: true; depthWrite: false; shader: flat"></a-sphere>
 
-      <!-- 3. CONTENEDOR DESPLEGABLE: Línea detrás (z = -0.05) + Pastilla delante (z = +0.05) -->
-      <a-entity class="peak-popup" position="0 0 0" scale="0.001 0.001 0.001" visible="false">
+      <!-- 3. CONTENEDOR DE PASTILLA SIEMPRE VISIBLE: Línea vertical + Pastilla informativa PeakVisor -->
+      <a-entity class="peak-popup" position="0 0 0" scale="1 1 1" visible="true">
         <!-- Línea vertical conectora: queda limpiamente POR DETRÁS de la pastilla -->
         <a-cylinder class="peak-stem clickable" position="0 0.65 -0.05" radius="0.016" height="1.3"
                     material="color: #00C4D6; shader: flat; opacity: 0.95; depthTest: true"></a-cylinder>
@@ -684,10 +684,9 @@ AFRAME.registerComponent('peak-marker', {
     }
 
     if (visible) {
-      this.popup.setAttribute('visible', 'true');
       this.popup.setAttribute('animation', {
         property: 'scale',
-        to: '1.15 1.15 1.15',
+        to: '1.25 1.25 1.25',
         dur: 200,
         easing: 'easeOutBack'
       });
@@ -695,16 +694,10 @@ AFRAME.registerComponent('peak-marker', {
     } else {
       this.popup.setAttribute('animation', {
         property: 'scale',
-        to: '0.001 0.001 0.001',
-        dur: 150,
-        easing: 'easeInQuad'
+        to: '1.0 1.0 1.0',
+        dur: 160,
+        easing: 'easeOutQuad'
       });
-      this.closeTimer = setTimeout(() => {
-        if (!AppState.selectedPeak || AppState.selectedPeak.id !== this.data.id) {
-          this.popup.setAttribute('visible', 'false');
-        }
-        this.closeTimer = null;
-      }, 160);
       if (this.dot) this.dot.setAttribute('material', 'color: #FFFFFF; opacity: 0.95');
     }
   }
@@ -1418,7 +1411,7 @@ AFRAME.registerComponent('gaze-home-trigger', {
 });
 
 // ==============================================================================
-// GESTIÓN DE PANTALLAS FLOTANTES 3D EN VR (PASSTHROUGH / REALIDAD MIXTA)
+// GESTIÓN DE PANTALLAS FLOTANTES 3D EN VR (DISEÑO ESPECTACULAR TIPO VISIONOS)
 // ==============================================================================
 function setupVRScreens() {
   const screens = [
@@ -1427,24 +1420,27 @@ function setupVRScreens() {
       planeId: 'portal-plane-magina',
       title: '⛰️ Pico Mágina',
       alt: '2.165 m',
-      desc: 'La cumbre más alta de Jaén. Horizonte 360° hacia Sierra Nevada y Cazorla.',
-      imgSrc: './assets/images/magina_preview.jpg'
+      desc: 'La cumbre más alta de Jaén. Horizonte 360° hacia Sierra Nevada, Cazorla y Jaén capital.',
+      imgSrc: './assets/images/magina_preview.jpg',
+      btnText: '👁️ Explorar Cumbre en 360°'
     },
     {
       id: 'miramundos',
       planeId: 'portal-plane-miramundos',
       title: '🏔️ Refugio Miramundos',
       alt: '2.077 m',
-      desc: 'Histórico refugio de piedra seca sobre el anfiteatro kárstico de Sierra Mágina.',
-      imgSrc: './assets/images/miramundos_preview.jpg'
+      desc: 'Histórico refugio de piedra seca sobre el anfiteatro kárstico con vistas a la Cuerda de Mágina y valles.',
+      imgSrc: './assets/images/miramundos_preview.jpg',
+      btnText: '👁️ Explorar Refugio en 360°'
     },
     {
       id: 'nevero',
       planeId: 'portal-plane-nevero',
       title: '❄️ Nevero de Piedra Seca',
       alt: '2.100 m',
-      desc: 'Construcción tradicional para conservación de nieve. Falsa cúpula de lajas.',
-      imgSrc: './assets/images/nevero_preview.jpg'
+      desc: 'Construcción tradicional para conservación de nieve. Falsa cúpula y técnica sin mortero.',
+      imgSrc: './assets/images/nevero_preview.jpg',
+      btnText: '🏛️ Explorar Nevero 3D'
     }
   ];
 
@@ -1454,11 +1450,29 @@ function setupVRScreens() {
 
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
-    canvas.height = 960;
+    canvas.height = 1200;
     const ctx = canvas.getContext('2d');
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
+
+    const wrapText = (context, text, x, y, maxWidth, lineHeight) => {
+      const words = text.split(' ');
+      let line = '';
+      let curY = y;
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = context.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          context.fillText(line.trim(), x, curY);
+          line = words[n] + ' ';
+          curY += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      context.fillText(line.trim(), x, curY);
+    };
 
     const renderCard = (imgLoaded) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1477,50 +1491,91 @@ function setupVRScreens() {
         ctx.closePath();
       }
 
-      // Fondo de la tarjeta (Vidrio oscuro translúcido con sombra)
+      // Fondo de la tarjeta (Vidrio oscuro obsidian glass de alta densidad)
       ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.75)';
-      ctx.shadowBlur = 32;
-      ctx.fillStyle = 'rgba(12, 20, 16, 0.94)';
-      roundRect(16, 16, 992, 928, 36);
+      ctx.shadowColor = 'rgba(0,0,0,0.85)';
+      ctx.shadowBlur = 36;
+      ctx.fillStyle = 'rgba(10, 18, 14, 0.96)';
+      roundRect(16, 16, 992, 1168, 38);
       ctx.fill();
       ctx.restore();
 
-      // Borde dorado elegante y estilizado
-      ctx.strokeStyle = 'rgba(212, 175, 55, 0.65)';
+      // Doble Borde: Borde dorado noble exterior + borde interior cian sutil
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.7)';
       ctx.lineWidth = 4;
-      roundRect(16, 16, 992, 928, 36);
+      roundRect(16, 16, 992, 1168, 38);
       ctx.stroke();
 
-      // Imagen thumbnail en la mitad superior (Limpia, sin insignias que tapen)
+      ctx.strokeStyle = 'rgba(0, 196, 214, 0.25)';
+      ctx.lineWidth = 1.5;
+      roundRect(22, 22, 980, 1156, 34);
+      ctx.stroke();
+
+      // Fotografía panorámica en la mitad superior con esquinas redondeadas
       ctx.save();
-      roundRect(24, 24, 976, 560, 28);
+      roundRect(26, 26, 972, 570, 28);
       ctx.clip();
       if (imgLoaded) {
-        ctx.drawImage(imgLoaded, 24, 24, 976, 560);
+        ctx.drawImage(imgLoaded, 26, 26, 972, 570);
       } else {
         ctx.fillStyle = '#1B2C24';
-        ctx.fillRect(24, 24, 976, 560);
+        ctx.fillRect(26, 26, 972, 570);
       }
+
+      // Degradado sutil en la base de la imagen para fundirse perfectamente con el cristal
+      const fadeGrad = ctx.createLinearGradient(26, 440, 26, 596);
+      fadeGrad.addColorStop(0, 'rgba(10, 18, 14, 0)');
+      fadeGrad.addColorStop(1, 'rgba(10, 18, 14, 0.96)');
+      ctx.fillStyle = fadeGrad;
+      ctx.fillRect(26, 440, 972, 160);
       ctx.restore();
 
-      // Título
+      // Título de la Cumbre
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 54px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(s.title, 52, 660);
 
-      // Altitud
-      ctx.fillStyle = '#00C4D6';
-      ctx.font = 'bold 38px sans-serif';
-      ctx.fillText(s.alt, 52, 725);
+      // Pastilla de Altitud (Cian Luminoso)
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 196, 214, 0.16)';
+      roundRect(52, 695, 200, 48, 14);
+      ctx.fill();
+      ctx.strokeStyle = '#00C4D6';
+      ctx.lineWidth = 2;
+      roundRect(52, 695, 200, 48, 14);
+      ctx.stroke();
 
-      // Descripción
-      ctx.fillStyle = '#C8D2CD';
+      ctx.fillStyle = '#00F0FF';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s.alt, 152, 720);
+      ctx.restore();
+
+      // Descripción fluida con ajuste de línea automático (SIN CORTES DE TEXTO)
+      ctx.fillStyle = '#CAD6D0';
       ctx.font = '30px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText(s.desc, 52, 805);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      wrapText(ctx, s.desc, 52, 800, 920, 44);
 
-      // Toda la tarjeta es clicable e interactiva (sin botones redundantes)
+      // Botón dorado de acción en el pie de la tarjeta
+      ctx.save();
+      const btnGrad = ctx.createLinearGradient(52, 1030, 972, 1110);
+      btnGrad.addColorStop(0, '#D4AF37');
+      btnGrad.addColorStop(1, '#A07010');
+      ctx.fillStyle = btnGrad;
+      roundRect(52, 1030, 920, 80, 20);
+      ctx.fill();
+
+      ctx.fillStyle = '#08100C';
+      ctx.font = 'bold 32px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s.btnText, 512, 1070);
+      ctx.restore();
+
       texture.needsUpdate = true;
     };
 
@@ -1554,106 +1609,143 @@ function setupVRWelcomePanel() {
   if (!planeEl) return;
 
   const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 640;
+  canvas.width = 1280;
+  canvas.height = 840;
   const ctx = canvas.getContext('2d');
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
 
-  function drawWelcome(pajarilloImg, aytoImg) {
+  // Cargar TODOS los logotipos oficiales (los 2 superiores + los 5 de cofinanciación institucional)
+  const images = {
+    pajarillo: null,
+    ayto: null,
+    ue: null,
+    hacienda: null,
+    fondos: null,
+    junta: null,
+    aytoHuelma: null
+  };
+
+  function roundRect(x, y, bw, bh, br) {
+    ctx.beginPath();
+    ctx.moveTo(x + br, y);
+    ctx.lineTo(x + bw - br, y);
+    ctx.quadraticCurveTo(x + bw, y, x + bw, y + br);
+    ctx.lineTo(x + bw, y + bh - br);
+    ctx.quadraticCurveTo(x + bw, y + bh, x + bw - br, y + bh);
+    ctx.lineTo(x + br, y + bh);
+    ctx.quadraticCurveTo(x, y + bh, x, y + bh - br);
+    ctx.lineTo(x + br, y + br);
+    ctx.quadraticCurveTo(x, y, x + br, y);
+    ctx.closePath();
+  }
+
+  function drawWelcome() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function roundRect(x, y, bw, bh, br) {
-      ctx.beginPath();
-      ctx.moveTo(x + br, y);
-      ctx.lineTo(x + bw - br, y);
-      ctx.quadraticCurveTo(x + bw, y, x + bw, y + br);
-      ctx.lineTo(x + bw, y + bh - br);
-      ctx.quadraticCurveTo(x + bw, y + bh, x + bw - br, y + bh);
-      ctx.lineTo(x + br, y + bh);
-      ctx.quadraticCurveTo(x, y + bh, x, y + bh - br);
-      ctx.lineTo(x, y + br);
-      ctx.quadraticCurveTo(x, y, x + br, y);
-      ctx.closePath();
-    }
-
-    // Fondo pastilla oscura translúcida (Foto 1 del usuario)
+    // Fondo pastilla oscura translúcida idéntica a la pantalla del Mac
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.75)';
-    ctx.shadowBlur = 28;
-    ctx.fillStyle = 'rgba(14, 22, 17, 0.94)';
-    roundRect(20, 20, 984, 600, 36);
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 32;
+    ctx.fillStyle = 'rgba(14, 22, 17, 0.96)';
+    roundRect(20, 20, 1240, 800, 40);
     ctx.fill();
     ctx.restore();
 
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
-    ctx.lineWidth = 3;
-    roundRect(20, 20, 984, 600, 36);
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.55)';
+    ctx.lineWidth = 4;
+    roundRect(20, 20, 1240, 800, 40);
     ctx.stroke();
 
-    // Logos superiores
-    if (pajarilloImg && pajarilloImg.complete) {
-      ctx.drawImage(pajarilloImg, 420, 50, 75, 75);
+    // Logos superiores centrados
+    if (images.pajarillo && images.pajarillo.complete) {
+      ctx.drawImage(images.pajarillo, 530, 45, 95, 75);
     }
-    if (aytoImg && aytoImg.complete) {
-      ctx.drawImage(aytoImg, 520, 50, 75, 75);
+    if (images.ayto && images.ayto.complete) {
+      ctx.drawImage(images.ayto, 655, 48, 105, 70);
     }
 
-    // Textos
+    // Textos institucionales
     ctx.textAlign = 'center';
     ctx.fillStyle = '#D4AF37';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.fillText('CENTRO DE INTERPRETACIÓN · HUELMA', 512, 168);
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText('CENTRO DE INTERPRETACIÓN · HUELMA', 640, 175);
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 44px sans-serif';
-    ctx.fillText('Visor Panorámico de Cumbres 360°', 512, 220);
+    ctx.font = 'bold 50px sans-serif';
+    ctx.fillText('Visor Panorámico de Cumbres 360°', 640, 240);
 
-    ctx.fillStyle = '#C8D2CD';
-    ctx.font = '24px sans-serif';
-    ctx.fillText('Identifica en tiempo real los picos y sierras del horizonte de Sierra Mágina', 512, 275);
-    ctx.fillText('con etiquetas en la cima y fichas explicativas.', 512, 310);
+    ctx.fillStyle = '#CAD6D0';
+    ctx.font = '26px sans-serif';
+    ctx.fillText('Identifica en tiempo real los picos y sierras del horizonte de Sierra Mágina', 640, 300);
+    ctx.fillText('con etiquetas en la cima y fichas explicativas.', 640, 340);
 
     // Botón Dorado: Comenzar Exploración
     ctx.save();
-    const btnGrad = ctx.createLinearGradient(262, 365, 762, 440);
+    const btnGrad = ctx.createLinearGradient(390, 395, 890, 475);
     btnGrad.addColorStop(0, '#D4AF37');
-    btnGrad.addColorStop(1, '#B8860B');
+    btnGrad.addColorStop(1, '#A07010');
     ctx.fillStyle = btnGrad;
-    roundRect(262, 365, 500, 72, 20);
+    roundRect(390, 395, 500, 78, 22);
     ctx.fill();
 
-    ctx.fillStyle = '#0F1712';
-    ctx.font = 'bold 30px sans-serif';
+    ctx.fillStyle = '#08100C';
+    ctx.font = 'bold 34px sans-serif';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Comenzar Exploración', 512, 401);
+    ctx.fillText('Comenzar Exploración', 640, 434);
     ctx.restore();
 
-    // Logos de financiación institucional inferior
+    // Banda Blanca Institucional con los 5 logotipos oficiales
     ctx.fillStyle = '#FFFFFF';
-    roundRect(60, 480, 904, 96, 16);
+    roundRect(50, 520, 1180, 120, 18);
     ctx.fill();
 
-    ctx.fillStyle = '#1A2922';
-    ctx.font = 'bold 18px sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Cofinanciado por la Unión Europea  ·  Ministerio de Hacienda  ·  Junta de Andalucía  ·  Ayuntamiento de Huelma', 512, 528);
+    // Dibujar cada uno de los 5 logos oficiales en sus 5 slots equidistantes
+    const slotW = 1180 / 5; // 236px por cada logo
+    const slotY = 520;
+    const slotH = 120;
+
+    const drawLogoInSlot = (img, slotIndex, maxW = 200, maxH = 75) => {
+      if (!img || !img.complete || img.naturalWidth === 0) return;
+      const slotCenterX = 50 + (slotIndex * slotW) + (slotW / 2);
+      const slotCenterY = slotY + (slotH / 2);
+
+      const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
+      const w = img.naturalWidth * scale;
+      const h = img.naturalHeight * scale;
+      ctx.drawImage(img, slotCenterX - (w / 2), slotCenterY - (h / 2), w, h);
+    };
+
+    drawLogoInSlot(images.ue, 0, 210, 70);
+    drawLogoInSlot(images.hacienda, 1, 200, 75);
+    drawLogoInSlot(images.fondos, 2, 210, 65);
+    drawLogoInSlot(images.junta, 3, 210, 70);
+    drawLogoInSlot(images.aytoHuelma, 4, 150, 75);
 
     texture.needsUpdate = true;
   }
 
-  const pajarilloImg = new Image();
-  pajarilloImg.crossOrigin = 'anonymous';
-  pajarilloImg.src = './assets/images/logo-pajarillo-white.png';
+  // Carga reactiva de los 7 activos gráficos
+  const loadAsset = (key, src) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      images[key] = img;
+      drawWelcome();
+    };
+    img.src = src;
+  };
 
-  const aytoImg = new Image();
-  aytoImg.crossOrigin = 'anonymous';
-  aytoImg.src = './assets/images/logo-ayuntamiento-huelma-white.png';
+  loadAsset('pajarillo', './assets/images/logo-pajarillo-white.png');
+  loadAsset('ayto', './assets/images/logo-ayuntamiento-huelma-white.png');
+  loadAsset('ue', './assets/images/logos/01-union-europea.png');
+  loadAsset('hacienda', './assets/images/logos/02-ministerio-hacienda.png');
+  loadAsset('fondos', './assets/images/logos/03-fondos-europeos.png');
+  loadAsset('junta', './assets/images/logos/04-junta-andalucia.png');
+  loadAsset('aytoHuelma', './assets/images/logos/05-ayuntamiento-huelma.png');
 
-  pajarilloImg.onload = () => drawWelcome(pajarilloImg, aytoImg);
-  aytoImg.onload = () => drawWelcome(pajarilloImg, aytoImg);
-  drawWelcome(null, null);
+  drawWelcome();
 
   const applyMesh = () => {
     const mesh = planeEl.getObject3D('mesh');
@@ -1673,9 +1765,7 @@ function setupVRWelcomePanel() {
   }
 }
 
-// ==============================================================================
-// FLUJO Y CONTROL DE ESTADOS DE LA EXPERIENCIA
-// ==============================================================================
+
 window.startExperience = function () {
   AppState.flowState = 'screens_menu';
   const modal = document.getElementById('welcome-modal');
