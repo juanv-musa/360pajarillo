@@ -1,51 +1,36 @@
-# Versión de Referencia: v1.2.0-dos-panoramicas-completas
+# Versión de Referencia: v2.0.0-realidad-mixta-portales-y-boton-suelo
 
-- **Identificador de versión:** `v1.2.0-dos-panoramicas-completas` (Etiqueta Git: `v1.2.0`)
-- **Fecha:** 9 de noviembre de 2026
-- **Estado:** ✅ Calibración completa de cumbres e hitos en AMBAS panorámicas (Pico Mágina y Refugio Miramundos) consolidada y blindada.
-- **Rama de respaldo:** `backup-v1.2.0-dos-panoramicas-completas`
+- **Identificador de versión:** `v2.0.0-realidad-mixta-portales-y-boton-suelo` (Etiqueta Git: `v2.0.0`)
+- **Fecha:** 12 de noviembre de 2026
+- **Estado:** ✅ Flujo completo de Realidad Mixta (Passthrough), Menú de 3 Pantallas Flotantes y Botón 🏠 de suelo con mirada de 3 segundos consolidado.
 - **URL de producción (GitHub Pages):** https://juanv-musa.github.io/360pajarillo/
 
 ---
 
-## ⛰️ Panorámica 1: Cumbre de Pico Mágina (2.165 m) · Rumbo Base: 54°
-*Total: 15 cumbres e hitos*
-1. **Pico Almadén (2.036 m)** · Yaw: `-153.2°`, Pitch: `0.8°`
-2. **Peña de Jaén (2.147 m)** · Yaw: `-171.3°`, Pitch: `0.5°`
-3. **Cerro Aznaitín (1.735 m)** · Yaw: `-83.9°`, Pitch: `-1.2°`
-4. **Cerro Cárceles (2.056 m)** · Yaw: `-107.9°`, Pitch: `-1.4°`
-5. **Sierra Jabalcúz (1.618 m)** · Yaw: `-160.5°`, Pitch: `0.9°`
-6. **La Serrezuela (1.956 m)** · Yaw: `137.0°`, Pitch: `-4.4°`
-7. **Loma de las Viñas (1.134 m)** · Yaw: `106.2°`, Pitch: `-8.8°`
-8. **Pico Veleta (3.398 m)** · Yaw: `98.9°`, Pitch: `2.0°`
-9. **Pico del Mulhacén (3.479 m)** · Yaw: `94.8°`, Pitch: `2.5°`
-10. **Cuerda del Milagro (1.938 m)** · Yaw: `54.0°`, Pitch: `-3.8°`
-11. **Cerro de la Cantera (1.148 m)** · Yaw: `75.6°`, Pitch: `-5.5°`
-12. **HUELMA (981 m)** · Yaw: `103.3°`, Pitch: `-8.8°`
-13. **La Sagra (2.386 m)** · Yaw: `-0.7°`, Pitch: `1.3°`
-14. **El Yelmo (1.808 m)** · Yaw: `-21.6°`, Pitch: `0.2°`
-15. **Refugio Miramundos (2.077 m)** · Yaw: `-0.8°`, Pitch: `-4.0°`
+## 🥽 1. Flujo de Realidad Mixta (Passthrough) para Centro de Interpretación
+1. **Puesta de Gafas (Paso 1):**
+   - El visitante ve la **sala física real** a través de las cámaras a color de las Meta Quest.
+   - Frente a él flota la **Pastilla Principal de Bienvenida** (Logos Santuario de El Pajarillo, Ayuntamiento de Huelma, cofinanciación de la Unión Europea y Junta de Andalucía, título y botón *"Comenzar Exploración"*).
+2. **Menú de 3 Pantallas Flotantes (Paso 2):**
+   - Al pulsar *"Comenzar Exploración"*, la pastilla inicial se repliega y se despliegan en arco en la sala real **3 Pantallas Espaciales**:
+     * ⛰️ **Pico Mágina (2.165 m):** 15 cumbres e hitos con miniatura fotográfica.
+     * 🏔️ **Refugio Miramundos (2.077 m):** 12 cumbres e hitos con miniatura fotográfica.
+     * ❄️ **Nevero de Piedra Seca (2.100 m):** Reconstrucción 3D y Patrimonio UNESCO.
+   - El usuario sigue viendo la sala real mientras interactúa con los 3 portales.
+3. **Inmersión en Cumbre (Paso 3):**
+   - Al seleccionar cualquiera de las 3 pantallas, un fundido suave (*fade*) sumerge al usuario al 100% en la experiencia virtual de esa cumbre con sonido de viento, cumbres marcadas y brújula.
 
 ---
 
-## 🏔️ Panorámica 2: Cumbre de Miramundos (2.077 m) · Rumbo Base: -130°
-*Total: 12 cumbres e hitos*
-1. **Cerro Aznaitín (1.735 m)** · Yaw: `107.0°`, Pitch: `0.8°`
-2. **Alto de La Serrezuela (1.362 m)** · Yaw: `155.6°`, Pitch: `-1.8°`
-3. **Morra del Peleo (1.606 m)** · Yaw: `177.0°`, Pitch: `-7.6°`
-4. **Golondrina (1.139 m)** · Yaw: `172.7°`, Pitch: `-4.2°`
-5. **El Yelmo (1.808 m)** · Yaw: `-179.3°`, Pitch: `-7.4°`
-6. **Cerro Gordo (1.528 m)** · Yaw: `-126.9°`, Pitch: `-9.3°`
-7. **Cerro Postrero (1.444 m)** · Yaw: `-91.9°`, Pitch: `0.0°`
-8. **Pico Mulhacén (3.479 m)** · Yaw: `-64.2°`, Pitch: `2.2°`
-9. **Pico Veleta (3.396 m)** · Yaw: `-60.7°`, Pitch: `2.0°`
-10. **Alta Coloma (1.696 m)** · Yaw: `-20.4°`, Pitch: `0.3°`
-11. **Pico Mágina (2.165 m)** · Yaw: `30.0°`, Pitch: `3.9°`
-12. **Cerro Cárceles (2.054 m)** · Yaw: `63.2°`, Pitch: `2.2°`
+## 🏠 2. Botón de Casa en el Suelo (Gaze Timer 3 seg / Clic Láser)
+- **Ubicación:** Frente a los pies en el Anillo Guardián (`position="0 0.04 -1.1" rotation="-45 0 0"`).
+- **Activación por mirada:** Al mirar al icono `🏠` durante **3 segundos**, un anillo radial cian se va completando con indicador numérico regresivo en tiempo real (*"Volviendo a la sala en 3s..."*). Al llenarse, devuelve al usuario al menú de las 3 pantallas en la sala real sin tocar mandos.
+- **Activación por mando:** Clic directo con puntero láser o botones B/Y del mando.
 
 ---
 
-## 🛡️ Medidas de Seguridad y Respaldo
-- Base de datos oficial incorporada en el código fuente de [`js/hotspots-data.js`](file:///Users/juan/Documents/antigravity_proyect/360pajarillo/js/hotspots-data.js).
-- Rama de respaldo dedicada `backup-v1.2.0-dos-panoramicas-completas` sincronizada en GitHub.
-- Compatible con visualización en navegadores de escritorio, móviles y gafas Meta Quest (WebXR) directamente desde la URL pública.
+## 🛡️ 3. Modo Calibrador Protegido para Administrador
+- **Para visitantes:** Los botones de calibrador, cruces y herramientas técnicas están **completamente ocultos** por defecto.
+- **Para el administrador:** Se activa instantáneamente pulsando la tecla **`C`** en el teclado o accediendo con la URL:  
+  `https://juanv-musa.github.io/360pajarillo/?admin=1`
+- Todos los puntos calibrados (15 en Mágina, 12 en Miramundos) y la persistencia en `localStorage` y `hotspots-data.js` están 100% intactos.

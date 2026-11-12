@@ -10,19 +10,21 @@ const AppState = {
   currentSceneId: "magina",
   selectedPeak: null,
   calibrationMode: false,
+  adminMode: false,
+  flowState: "welcome",
   currentYaw: 0,
   currentPitch: 0,
   voiceEnabled: true,
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "1.2.0";
+const CURRENT_DATA_VERSION = "2.0.0";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
   try {
     const savedVer = localStorage.getItem('sierra_magina_dataset_version');
-    // Si la versión guardada en el navegador es anterior a la oficial (1.2.0),
+    // Si la versión guardada en el navegador es anterior a la oficial (2.0.0),
     // actualizar automáticamente el localStorage con todos los datos oficiales
     if (savedVer !== CURRENT_DATA_VERSION) {
       localStorage.setItem('sierra_magina_360_hotspots', JSON.stringify(defaultData));
@@ -743,13 +745,23 @@ function renderScene(sceneId) {
   sky.setAttribute('src', sceneData.image);
   sky.setAttribute('rotation', sceneData.skyRotation || "0 0 0");
 
+  const scene3dRig = document.getElementById('scene-3d-rig');
+  if (sceneData.is3DModel) {
+    if (scene3dRig) scene3dRig.setAttribute('visible', 'true');
+    sky.setAttribute('material', 'opacity: 0.65; transparent: true');
+  } else {
+    if (scene3dRig) scene3dRig.setAttribute('visible', 'false');
+    sky.setAttribute('material', 'opacity: 1.0; transparent: false');
+  }
+
   const container = document.getElementById('hotspots-container');
   while (container.firstChild) {
     container.removeChild(container.firstChild);
   }
 
+  const hotspotDistance = sceneData.is3DModel ? 3.8 : 14.0;
   sceneData.hotspots.forEach(hs => {
-    const pos = sphericalToCartesian(hs.yaw, hs.pitch, 14.0);
+    const pos = sphericalToCartesian(hs.yaw, hs.pitch, hotspotDistance);
     const entity = document.createElement('a-entity');
     entity.setAttribute('id', `peak-${hs.id}`);
     entity.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
@@ -1222,6 +1234,595 @@ function setupDesktopMouseInteractions() {
   });
 }
 
+// ==============================================================================
+// COMPONENTE: gaze-home-trigger (Botón 🏠 en el Suelo con Anillo Radial de 3 seg)
+// ==============================================================================
+AFRAME.registerComponent('gaze-home-trigger', {
+  init: function () {
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = 512;
+    this.canvas.height = 220;
+    this.ctx = this.canvas.getContext('2d');
+    this.texture = new THREE.CanvasTexture(this.canvas);
+    this.texture.minFilter = THREE.LinearFilter;
+    this.texture.magFilter = THREE.LinearFilter;
+    this.texture.generateMipmaps = false;
+
+    this.progress = 0;
+    this.isHovered = false;
+    this.animId = null;
+
+    const applyTex = () => {
+      const mesh = this.el.getObject3D('mesh');
+      if (mesh && mesh.material) {
+        mesh.material.map = this.texture;
+        mesh.material.needsUpdate = true;
+        mesh.renderOrder = 4;
+      }
+    };
+    this.el.addEventListener('loaded', applyTex);
+    applyTex();
+
+    this.drawButton(0);
+
+    const onEnter = () => {
+      if (this.isHovered) return;
+      this.isHovered = true;
+      this.startTime = Date.now();
+      const duration = 3000; // 3.0 segundos exactos para regresar a la sala
+
+      const loop = () => {
+        if (!this.isHovered) return;
+        const elapsed = Date.now() - this.startTime;
+        this.progress = Math.min(1.0, elapsed / duration);
+        this.drawButton(this.progress);
+
+        if (this.progress >= 1.0) {
+          this.isHovered = false;
+          this.progress = 0;
+          this.drawButton(0);
+          window.returnTo3ScreensMenu();
+        } else {
+          this.animId = requestAnimationFrame(loop);
+        }
+      };
+      this.animId = requestAnimationFrame(loop);
+    };
+
+    const onLeave = () => {
+      this.isHovered = false;
+      this.progress = 0;
+      if (this.animId) cancelAnimationFrame(this.animId);
+      this.drawButton(0);
+    };
+
+    const onClick = (evt) => {
+      if (evt && evt.stopPropagation) evt.stopPropagation();
+      this.isHovered = false;
+      this.progress = 0;
+      if (this.animId) cancelAnimationFrame(this.animId);
+      this.drawButton(0);
+      window.returnTo3ScreensMenu();
+    };
+
+    this.el.addEventListener('mouseenter', onEnter);
+    this.el.addEventListener('raycaster-intersected', onEnter);
+    this.el.addEventListener('mouseleave', onLeave);
+    this.el.addEventListener('raycaster-intersected-cleared', onLeave);
+    this.el.addEventListener('click', onClick);
+  },
+
+  drawButton: function (progress) {
+    const ctx = this.ctx;
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const r = 36;
+    const pad = 10;
+    const boxW = w - pad * 2;
+    const boxH = h - pad * 2;
+
+    function roundRect(x, y, bw, bh, br) {
+      ctx.beginPath();
+      ctx.moveTo(x + br, y);
+      ctx.lineTo(x + bw - br, y);
+      ctx.quadraticCurveTo(x + bw, y, x + bw, y + br);
+      ctx.lineTo(x + bw, y + bh - br);
+      ctx.quadraticCurveTo(x + bw, y + bh, x + bw - br, y + bh);
+      ctx.lineTo(x + br, y + bh);
+      ctx.quadraticCurveTo(x, y + bh, x, y + bh - br);
+      ctx.lineTo(x, y + br);
+      ctx.quadraticCurveTo(x, y, x + br, y);
+      ctx.closePath();
+    }
+
+    // Fondo pastilla obsidian glass
+    ctx.save();
+    ctx.fillStyle = progress > 0 ? 'rgba(16, 28, 22, 0.96)' : 'rgba(10, 18, 14, 0.92)';
+    roundRect(pad, pad, boxW, boxH, r);
+    ctx.fill();
+
+    // Borde iluminado
+    ctx.strokeStyle = progress > 0 ? '#00C4D6' : 'rgba(212, 175, 55, 0.55)';
+    ctx.lineWidth = progress > 0 ? 4 : 2.5;
+    roundRect(pad, pad, boxW, boxH, r);
+    ctx.stroke();
+    ctx.restore();
+
+    // Círculo del icono 🏠 con Anillo Radial de Progreso
+    const circleX = pad + 70;
+    const circleY = h / 2;
+    const circleR = 48;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.beginPath();
+    ctx.arc(circleX, circleY, circleR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Anillo radial de progreso (se va llenando en 3 segundos)
+    if (progress > 0) {
+      ctx.save();
+      ctx.strokeStyle = '#00C4D6';
+      ctx.lineWidth = 7;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(circleX, circleY, circleR - 3, -Math.PI / 2, -Math.PI / 2 + (progress * Math.PI * 2));
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(circleX, circleY, circleR - 3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Icono 🏠 en el centro
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '40px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🏠', circleX, circleY + 2);
+
+    // Textos informativos
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 30px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('MENÚ DE CUMBRES', pad + 140, (h / 2) - 18);
+
+    ctx.font = '22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    if (progress > 0) {
+      const remainingSecs = Math.max(1, Math.ceil((1 - progress) * 3));
+      ctx.fillStyle = '#00F0FF';
+      ctx.fillText(`Volviendo a la sala en ${remainingSecs}s...`, pad + 140, (h / 2) + 24);
+    } else {
+      ctx.fillStyle = '#D4AF37';
+      ctx.fillText('Mirar 3 seg o Clic para salir', pad + 140, (h / 2) + 24);
+    }
+
+    if (this.texture) this.texture.needsUpdate = true;
+  }
+});
+
+// ==============================================================================
+// GESTIÓN DE PANTALLAS FLOTANTES 3D EN VR (PASSTHROUGH / REALIDAD MIXTA)
+// ==============================================================================
+function setupVRScreens() {
+  const screens = [
+    {
+      id: 'magina',
+      planeId: 'portal-plane-magina',
+      title: 'Pico Mágina',
+      alt: '2.165 m',
+      badge: '15 CUMBRES',
+      desc: 'La cumbre más alta de Jaén. Horizonte 360° hacia Sierra Nevada y Cazorla.',
+      imgSrc: './assets/images/magina_preview.jpg'
+    },
+    {
+      id: 'miramundos',
+      planeId: 'portal-plane-miramundos',
+      title: 'Refugio Miramundos',
+      alt: '2.077 m',
+      badge: '12 CUMBRES',
+      desc: 'Histórico refugio de piedra seca sobre el anfiteatro kárstico de Sierra Mágina.',
+      imgSrc: './assets/images/miramundos_preview.jpg'
+    },
+    {
+      id: 'nevero',
+      planeId: 'portal-plane-nevero',
+      title: 'Nevero de Piedra Seca',
+      alt: '2.100 m',
+      badge: 'UNESCO 3D',
+      desc: 'Construcción tradicional para conservación de nieve. Falsa cúpula de lajas.',
+      imgSrc: './assets/images/nevero_preview.jpg'
+    }
+  ];
+
+  screens.forEach(s => {
+    const planeEl = document.getElementById(s.planeId);
+    if (!planeEl) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 860;
+    const ctx = canvas.getContext('2d');
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+
+    const renderCard = (imgLoaded) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      function roundRect(x, y, bw, bh, br) {
+        ctx.beginPath();
+        ctx.moveTo(x + br, y);
+        ctx.lineTo(x + bw - br, y);
+        ctx.quadraticCurveTo(x + bw, y, x + bw, y + br);
+        ctx.lineTo(x + bw, y + bh - br);
+        ctx.quadraticCurveTo(x + bw, y + bh, x + bw - br, y + bh);
+        ctx.lineTo(x + br, y + bh);
+        ctx.quadraticCurveTo(x, y + bh, x, y + bh - br);
+        ctx.lineTo(x, y + br);
+        ctx.quadraticCurveTo(x, y, x + br, y);
+        ctx.closePath();
+      }
+
+      // Sombra
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.7)';
+      ctx.shadowBlur = 24;
+      ctx.fillStyle = 'rgba(12, 20, 16, 0.94)';
+      roundRect(16, 16, 768, 828, 32);
+      ctx.fill();
+      ctx.restore();
+
+      // Borde dorado elegante
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.55)';
+      ctx.lineWidth = 3;
+      roundRect(16, 16, 768, 828, 32);
+      ctx.stroke();
+
+      // Imagen thumbnail en la mitad superior
+      ctx.save();
+      roundRect(24, 24, 752, 420, 24);
+      ctx.clip();
+      if (imgLoaded) {
+        ctx.drawImage(imgLoaded, 24, 24, 752, 420);
+      } else {
+        ctx.fillStyle = '#1B2C24';
+        ctx.fillRect(24, 24, 752, 420);
+      }
+      ctx.restore();
+
+      // Badge en miniatura
+      ctx.fillStyle = 'rgba(12, 20, 16, 0.88)';
+      roundRect(752 - 200, 40, 180, 44, 14);
+      ctx.fill();
+      ctx.strokeStyle = '#D4AF37';
+      ctx.lineWidth = 2;
+      roundRect(752 - 200, 40, 180, 44, 14);
+      ctx.stroke();
+      ctx.fillStyle = '#D4AF37';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s.badge, 752 - 110, 62);
+
+      // Título
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(s.title, 48, 495);
+
+      // Altitud
+      ctx.fillStyle = '#00C4D6';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText(s.alt, 48, 540);
+
+      // Descripción
+      ctx.fillStyle = '#C8D2CD';
+      ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(s.desc, 48, 590);
+
+      // Botón dorado de acción
+      ctx.save();
+      const btnGrad = ctx.createLinearGradient(48, 730, 752, 800);
+      btnGrad.addColorStop(0, '#D4AF37');
+      btnGrad.addColorStop(1, '#B8860B');
+      ctx.fillStyle = btnGrad;
+      roundRect(48, 730, 704, 70, 18);
+      ctx.fill();
+
+      ctx.fillStyle = '#0F1712';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('👁️ Explorar en 360°', 400, 765);
+      ctx.restore();
+
+      texture.needsUpdate = true;
+    };
+
+    renderCard(null);
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => renderCard(img);
+    img.src = s.imgSrc;
+
+    const applyMesh = () => {
+      const mesh = planeEl.getObject3D('mesh');
+      if (mesh && mesh.material) {
+        mesh.material.map = texture;
+        mesh.material.needsUpdate = true;
+      }
+    };
+    planeEl.addEventListener('loaded', applyMesh);
+    applyMesh();
+
+    planeEl.addEventListener('click', (evt) => {
+      if (evt && evt.stopPropagation) evt.stopPropagation();
+      window.enterSceneFromPortal(s.id);
+    });
+  });
+}
+
+function setupVRWelcomePanel() {
+  const planeEl = document.getElementById('vr-welcome-plane');
+  const btnStartEl = document.getElementById('vr-btn-start-exp');
+  if (!planeEl) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 640;
+  const ctx = canvas.getContext('2d');
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+
+  function drawWelcome(pajarilloImg, aytoImg) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    function roundRect(x, y, bw, bh, br) {
+      ctx.beginPath();
+      ctx.moveTo(x + br, y);
+      ctx.lineTo(x + bw - br, y);
+      ctx.quadraticCurveTo(x + bw, y, x + bw, y + br);
+      ctx.lineTo(x + bw, y + bh - br);
+      ctx.quadraticCurveTo(x + bw, y + bh, x + bw - br, y + bh);
+      ctx.lineTo(x + br, y + bh);
+      ctx.quadraticCurveTo(x, y + bh, x, y + bh - br);
+      ctx.lineTo(x, y + br);
+      ctx.quadraticCurveTo(x, y, x + br, y);
+      ctx.closePath();
+    }
+
+    // Fondo pastilla oscura translúcida (Foto 1 del usuario)
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.75)';
+    ctx.shadowBlur = 28;
+    ctx.fillStyle = 'rgba(14, 22, 17, 0.94)';
+    roundRect(20, 20, 984, 600, 36);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
+    ctx.lineWidth = 3;
+    roundRect(20, 20, 984, 600, 36);
+    ctx.stroke();
+
+    // Logos superiores
+    if (pajarilloImg && pajarilloImg.complete) {
+      ctx.drawImage(pajarilloImg, 420, 50, 75, 75);
+    }
+    if (aytoImg && aytoImg.complete) {
+      ctx.drawImage(aytoImg, 520, 50, 75, 75);
+    }
+
+    // Textos
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText('CENTRO DE INTERPRETACIÓN · HUELMA', 512, 168);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText('Visor Panorámico de Cumbres 360°', 512, 220);
+
+    ctx.fillStyle = '#C8D2CD';
+    ctx.font = '24px sans-serif';
+    ctx.fillText('Identifica en tiempo real los picos y sierras del horizonte de Sierra Mágina', 512, 275);
+    ctx.fillText('con etiquetas en la cima y fichas explicativas.', 512, 310);
+
+    // Botón Dorado: Comenzar Exploración
+    ctx.save();
+    const btnGrad = ctx.createLinearGradient(262, 365, 762, 440);
+    btnGrad.addColorStop(0, '#D4AF37');
+    btnGrad.addColorStop(1, '#B8860B');
+    ctx.fillStyle = btnGrad;
+    roundRect(262, 365, 500, 72, 20);
+    ctx.fill();
+
+    ctx.fillStyle = '#0F1712';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Comenzar Exploración', 512, 401);
+    ctx.restore();
+
+    // Logos de financiación institucional inferior
+    ctx.fillStyle = '#FFFFFF';
+    roundRect(60, 480, 904, 96, 16);
+    ctx.fill();
+
+    ctx.fillStyle = '#1A2922';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Cofinanciado por la Unión Europea  ·  Ministerio de Hacienda  ·  Junta de Andalucía  ·  Ayuntamiento de Huelma', 512, 528);
+
+    texture.needsUpdate = true;
+  }
+
+  const pajarilloImg = new Image();
+  pajarilloImg.crossOrigin = 'anonymous';
+  pajarilloImg.src = './assets/images/logo-pajarillo-white.png';
+
+  const aytoImg = new Image();
+  aytoImg.crossOrigin = 'anonymous';
+  aytoImg.src = './assets/images/logo-ayuntamiento-huelma-white.png';
+
+  pajarilloImg.onload = () => drawWelcome(pajarilloImg, aytoImg);
+  aytoImg.onload = () => drawWelcome(pajarilloImg, aytoImg);
+  drawWelcome(null, null);
+
+  const applyMesh = () => {
+    const mesh = planeEl.getObject3D('mesh');
+    if (mesh && mesh.material) {
+      mesh.material.map = texture;
+      mesh.material.needsUpdate = true;
+    }
+  };
+  planeEl.addEventListener('loaded', applyMesh);
+  applyMesh();
+
+  if (btnStartEl) {
+    btnStartEl.addEventListener('click', (evt) => {
+      if (evt && evt.stopPropagation) evt.stopPropagation();
+      window.startExperience();
+    });
+  }
+}
+
+// ==============================================================================
+// FLUJO Y CONTROL DE ESTADOS DE LA EXPERIENCIA
+// ==============================================================================
+window.startExperience = function () {
+  AppState.flowState = 'screens_menu';
+  const modal = document.getElementById('welcome-modal');
+  const screensModal = document.getElementById('screens-menu-modal');
+  const vrWelcomePanel = document.getElementById('vr-welcome-panel');
+  const vrScreensMenu = document.getElementById('vr-screens-menu');
+  const sky = document.getElementById('sky-360');
+
+  if (modal) modal.classList.add('hidden');
+  if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
+
+  const sceneEl = document.querySelector('a-scene');
+  const isVR = sceneEl && sceneEl.is('vr-mode');
+
+  if (isVR) {
+    if (sky) sky.setAttribute('visible', 'false');
+    if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'true');
+  } else {
+    if (screensModal) screensModal.classList.add('visible');
+  }
+
+  window.mountainWind.start();
+};
+
+window.openScreensMenu = function () {
+  window.returnTo3ScreensMenu();
+};
+
+window.backToWelcomeModal = function () {
+  AppState.flowState = 'welcome';
+  const welcomeModal = document.getElementById('welcome-modal');
+  const screensModal = document.getElementById('screens-menu-modal');
+  const vrWelcomePanel = document.getElementById('vr-welcome-panel');
+  const vrScreensMenu = document.getElementById('vr-screens-menu');
+  const sky = document.getElementById('sky-360');
+
+  if (screensModal) screensModal.classList.remove('visible');
+  if (welcomeModal) welcomeModal.classList.remove('hidden');
+
+  const sceneEl = document.querySelector('a-scene');
+  const isVR = sceneEl && sceneEl.is('vr-mode');
+  if (isVR) {
+    if (sky) sky.setAttribute('visible', 'false');
+    if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'false');
+    if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'true');
+  }
+};
+
+window.enterSceneFromPortal = function (sceneId) {
+  AppState.flowState = 'in_scene';
+  const overlay = document.getElementById('fade-overlay');
+  const screensModal = document.getElementById('screens-menu-modal');
+  const vrScreensMenu = document.getElementById('vr-screens-menu');
+  const vrWelcomePanel = document.getElementById('vr-welcome-panel');
+  const sky = document.getElementById('sky-360');
+  const floorCompass = document.getElementById('vr-floor-compass-rig');
+  const hotspotsContainer = document.getElementById('hotspots-container');
+
+  if (screensModal) screensModal.classList.remove('visible');
+
+  if (overlay) {
+    overlay.setAttribute('animation', 'property: material.opacity; to: 1; dur: 250; easing: easeInOutQuad');
+    setTimeout(() => {
+      if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'false');
+      if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
+
+      renderScene(sceneId);
+
+      if (sky) sky.setAttribute('visible', 'true');
+      if (floorCompass) floorCompass.setAttribute('visible', 'true');
+      if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'true');
+
+      overlay.setAttribute('animation', 'property: material.opacity; to: 0; dur: 350; easing: easeInOutQuad');
+    }, 280);
+  } else {
+    renderScene(sceneId);
+  }
+};
+
+window.returnTo3ScreensMenu = function () {
+  AppState.flowState = 'screens_menu';
+  const overlay = document.getElementById('fade-overlay');
+  const screensModal = document.getElementById('screens-menu-modal');
+  const vrScreensMenu = document.getElementById('vr-screens-menu');
+  const vrWelcomePanel = document.getElementById('vr-welcome-panel');
+  const sky = document.getElementById('sky-360');
+  const floorCompass = document.getElementById('vr-floor-compass-rig');
+  const hotspotsContainer = document.getElementById('hotspots-container');
+  const scene3dRig = document.getElementById('scene-3d-rig');
+
+  window.closePeakCard();
+
+  if (overlay) {
+    overlay.setAttribute('animation', 'property: material.opacity; to: 1; dur: 250; easing: easeInOutQuad');
+    setTimeout(() => {
+      // Activar Passthrough ocultando entorno virtual 360
+      if (sky) sky.setAttribute('visible', 'false');
+      if (floorCompass) floorCompass.setAttribute('visible', 'false');
+      if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'false');
+      if (scene3dRig) scene3dRig.setAttribute('visible', 'false');
+      if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
+
+      const sceneEl = document.querySelector('a-scene');
+      const isVR = sceneEl && sceneEl.is('vr-mode');
+
+      if (isVR) {
+        if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'true');
+      } else {
+        if (screensModal) screensModal.classList.add('visible');
+      }
+
+      overlay.setAttribute('animation', 'property: material.opacity; to: 0; dur: 350; easing: easeInOutQuad');
+    }, 280);
+  } else {
+    if (screensModal) screensModal.classList.add('visible');
+  }
+};
+
+window.enterVRMode = function () {
+  const sceneEl = document.querySelector('a-scene');
+  if (sceneEl) {
+    sceneEl.enterVR();
+  }
+};
+
 function setupCursorMode() {
   const sceneEl = document.querySelector('a-scene');
   const gaze = document.getElementById('gaze-cursor');
@@ -1231,20 +1832,58 @@ function setupCursorMode() {
 
     sceneEl.addEventListener('enter-vr', () => {
       gaze.setAttribute('visible', 'true');
+
+      const vrWelcomePanel = document.getElementById('vr-welcome-panel');
+      const vrScreensMenu = document.getElementById('vr-screens-menu');
+      const sky = document.getElementById('sky-360');
+
+      if (AppState.flowState === 'welcome') {
+        if (sky) sky.setAttribute('visible', 'false');
+        if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'true');
+        if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'false');
+      } else if (AppState.flowState === 'screens_menu') {
+        if (sky) sky.setAttribute('visible', 'false');
+        if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
+        if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'true');
+      } else if (AppState.flowState === 'in_scene') {
+        if (sky) sky.setAttribute('visible', 'true');
+        if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
+        if (vrScreensMenu) vrScreensMenu.setAttribute('visible', 'false');
+      }
     });
 
     sceneEl.addEventListener('exit-vr', () => {
       gaze.setAttribute('visible', 'false');
     });
   }
+
+  // Atajos de botones de mando en VR para volver al menú de la sala
+  window.addEventListener('bbuttondown', () => window.returnTo3ScreensMenu());
+  window.addEventListener('ybuttondown', () => window.returnTo3ScreensMenu());
 }
 
-window.startExperience = function () {
-  const modal = document.getElementById('welcome-modal');
-  if (modal) modal.classList.add('hidden');
-  // Iniciar sonido de viento relajante al comenzar
-  window.mountainWind.start();
-};
+// ==============================================================================
+// MODO CALIBRADOR OCULTO (PROTEGIDO PARA ADMINISTRADOR: TECLA 'C' O ?admin=1)
+// ==============================================================================
+function checkAdminMode() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isAdmin = urlParams.has('admin') || urlParams.has('calibrar') || urlParams.has('edit');
+  if (isAdmin) {
+    AppState.adminMode = true;
+    document.body.classList.add('admin-mode');
+    const btnCalib = document.getElementById('btn-calibrator');
+    if (btnCalib) btnCalib.classList.add('admin-visible');
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'c' || e.key === 'C') {
+      AppState.adminMode = !AppState.adminMode;
+      document.body.classList.toggle('admin-mode', AppState.adminMode);
+      const btnCalib = document.getElementById('btn-calibrator');
+      if (btnCalib) btnCalib.classList.toggle('admin-visible', AppState.adminMode);
+    }
+  });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   renderScene("magina");
@@ -1252,4 +1891,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCameraOrientationLoop();
   setupCursorMode();
   setupDesktopMouseInteractions();
+  setupVRScreens();
+  setupVRWelcomePanel();
+  checkAdminMode();
 });

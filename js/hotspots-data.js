@@ -240,6 +240,51 @@ const SCENES_DATA = {
         "desc": "Se encuentra en la cuerda principal al norte del Pico Mágina, muy cerca de otras cumbres conocidas como Peña Jaén y el Cerro Ponce."
       }
     ]
+  },
+  "nevero": {
+    "id": "nevero",
+    "name": "Nevero de Sierra Mágina (Piedra Seca)",
+    "shortName": "Nevero 3D",
+    "altitude": "2 100 m",
+    "baseHeading": 0,
+    "is3DModel": true,
+    "model": "assets/models/pozo_de_nieve_de_magina.glb",
+    "image": "assets/images/foto_360_magina.jpg",
+    "skyRotation": "0 0 0",
+    "hotspots": [
+      {
+        "id": "nevero-boca",
+        "title": "Boca del Pozo de Nieve",
+        "elevation": "2 100 m",
+        "yaw": 0,
+        "pitch": -12,
+        "desc": "Apertura superior excavada en la roca donde se introducía y compactaba la nieve invernal en capas aisladas con paja."
+      },
+      {
+        "id": "nevero-cupula",
+        "title": "Falsa Cúpula de Piedra Seca",
+        "elevation": "2 103 m",
+        "yaw": 18,
+        "pitch": 8,
+        "desc": "Impresionante estructura cupular levantada mediante aproximación escalonada de lajas de piedra caliza, sin ningún tipo de mortero ni cemento."
+      },
+      {
+        "id": "nevero-unesco",
+        "title": "Patrimonio UNESCO Piedra Seca",
+        "elevation": "2 098 m",
+        "yaw": -24,
+        "pitch": -2,
+        "desc": "Técnica constructiva tradicional declarada Patrimonio Cultural Inmaterial de la Humanidad por la UNESCO en 2018."
+      },
+      {
+        "id": "nevero-comercio",
+        "title": "Comercio Histórico del Hielo",
+        "elevation": "2 097 m",
+        "yaw": 30,
+        "pitch": -6,
+        "desc": "El hielo se conservaba durante todo el estío para abastecer a las poblaciones de Jaén y comarca para usos medicinales y de conservación."
+      }
+    ]
   }
 };
 
