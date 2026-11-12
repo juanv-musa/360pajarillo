@@ -18,7 +18,7 @@ const AppState = {
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "2.0.2";
+const CURRENT_DATA_VERSION = "2.0.3";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
@@ -575,74 +575,65 @@ AFRAME.registerComponent('peak-marker', {
     const height3D = 0.95;
     const width3D = height3D * aspect;
 
-    // Estructura DOM A-Frame con testigo sutil (Punto Blanco Limpio)
+    // 1. Estructura base en el DOM: Punto de cumbre + Hitbox de interacción amplia
     el.innerHTML = `
-      <!-- 1. Testigo de cumbre: PUNTO BLANCO SUTIL Y LIMPIO (sin círculos azules) -->
-      <a-sphere class="peak-dot clickable" radius="0.08" material="color: #FFFFFF; shader: flat; opacity: 0.95"></a-sphere>
-
-      <!-- 2. ZONA DE IMPACTO AMPLIA: esfera transparente (0.001) para capturar el cursor fácilmente -->
-      <a-sphere class="peak-hitbox clickable" radius="0.85"
+      <a-sphere class="peak-dot clickable" radius="0.09" material="color: #FFFFFF; shader: flat; opacity: 0.95"></a-sphere>
+      <a-sphere class="peak-hitbox clickable" radius="1.2"
                 material="opacity: 0.001; transparent: true; depthWrite: false; shader: flat"></a-sphere>
-
-      <!-- 3. CONTENEDOR DE PASTILLA SIEMPRE VISIBLE: Línea vertical + Pastilla informativa PeakVisor -->
       <a-entity class="peak-popup" position="0 0 0" scale="1 1 1" visible="true">
-        <!-- Línea vertical conectora: queda limpiamente POR DETRÁS de la pastilla -->
-        <a-cylinder class="peak-stem clickable" position="0 0.65 -0.05" radius="0.016" height="1.3"
-                    material="color: #00C4D6; shader: flat; opacity: 0.95; depthTest: true"></a-cylinder>
-
-        <!-- Pastilla grande PeakVisor a 45 grados: por delante de la línea -->
-        <a-entity position="0 1.35 0.05" rotation="0 0 45">
-          <a-plane class="peak-pill-plane clickable" width="${width3D}" height="${height3D}" position="${width3D * 0.45} 0 0"
-                   material="transparent: true; shader: flat; side: double; depthTest: true"></a-plane>
-        </a-entity>
+        <a-cylinder class="peak-stem" position="0 0.65 -0.04" radius="0.02" height="1.3"
+                    material="color: #00C4D6; shader: flat; opacity: 0.95"></a-cylinder>
       </a-entity>
     `;
 
     this.popup = el.querySelector('.peak-popup');
     this.dot = el.querySelector('.peak-dot');
     this.hitbox = el.querySelector('.peak-hitbox');
-    this.stem = el.querySelector('.peak-stem');
-    this.pillPlane = el.querySelector('.peak-pill-plane');
 
-    // Asignar textura Three.js a la pastilla (renderOrder mayor para estar delante)
-    if (this.pillPlane) {
-      const applyTexture = () => {
-        const mesh = this.pillPlane.getObject3D('mesh');
-        if (mesh && mesh.material) {
-          mesh.material.map = texture;
-          mesh.material.needsUpdate = true;
-          mesh.renderOrder = 5;
-        }
-      };
-      this.pillPlane.addEventListener('loaded', applyTexture);
-      applyTexture();
-    }
+    // 2. Creación directa de la pastilla informativa con Three.js (100% fiable en VR y Desktop)
+    const pillGeo = new THREE.PlaneGeometry(width3D, height3D);
+    const pillMat = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: true
+    });
+    this.pillMesh = new THREE.Mesh(pillGeo, pillMat);
+    this.pillMesh.renderOrder = 10;
+    this.pillMesh.position.set(width3D * 0.45, 0, 0);
 
-    if (this.stem) {
-      const applyStem = () => {
-        const mesh = this.stem.getObject3D('mesh');
-        if (mesh) mesh.renderOrder = 1;
-      };
-      this.stem.addEventListener('loaded', applyStem);
-      applyStem();
+    const pillPivot = new THREE.Group();
+    pillPivot.position.set(0, 1.35, 0.05);
+    pillPivot.rotation.z = THREE.MathUtils.degToRad(45);
+    pillPivot.add(this.pillMesh);
+
+    const attachMesh = () => {
+      const targetObj = this.popup ? this.popup.object3D : el.object3D;
+      if (targetObj) {
+        targetObj.add(pillPivot);
+      }
+    };
+    if (this.popup && this.popup.object3D) {
+      attachMesh();
+    } else if (this.popup) {
+      this.popup.addEventListener('loaded', attachMesh);
+    } else {
+      attachMesh();
     }
 
     el.peakMarkerComponent = this;
     this.hideTimeout = null;
     this.closeTimer = null;
 
-    // Conectar eventos a los elementos interactivos del hito
-    const interactiveItems = [el, this.hitbox, this.dot, this.stem, this.pillPlane];
+    const interactiveItems = [el, this.hitbox, this.dot];
 
     const handleHover = () => {
-      // Ignorar si estamos en modo menú de pantallas o bienvenida
       if (AppState.flowState !== 'in_scene') return;
       if (this.hideTimeout) {
         clearTimeout(this.hideTimeout);
         this.hideTimeout = null;
       }
       this.showPill(true);
-      // SILENCIO: No locutar por voz al pasar el puntero (solo al hacer clic explícito)
     };
 
     const handleLeave = () => {
@@ -662,7 +653,7 @@ AFRAME.registerComponent('peak-marker', {
       if (this.hideTimeout) clearTimeout(this.hideTimeout);
       window.selectPeak(data);
       this.showPill(true);
-      speakPeak(data); // Locución de voz ÚNICAMENTE con clic deliberado
+      speakPeak(data);
     };
 
     interactiveItems.forEach(item => {
@@ -687,7 +678,7 @@ AFRAME.registerComponent('peak-marker', {
       this.popup.setAttribute('animation', {
         property: 'scale',
         to: '1.25 1.25 1.25',
-        dur: 200,
+        dur: 180,
         easing: 'easeOutBack'
       });
       if (this.dot) this.dot.setAttribute('material', 'color: #00C4D6; opacity: 1.0');
@@ -695,7 +686,7 @@ AFRAME.registerComponent('peak-marker', {
       this.popup.setAttribute('animation', {
         property: 'scale',
         to: '1.0 1.0 1.0',
-        dur: 160,
+        dur: 150,
         easing: 'easeOutQuad'
       });
       if (this.dot) this.dot.setAttribute('material', 'color: #FFFFFF; opacity: 0.95');
@@ -1200,7 +1191,7 @@ function setupDesktopMouseInteractions() {
 
   window.addEventListener('click', (e) => {
     if (sceneEl.is('vr-mode')) return;
-    if (e.target.closest('.museum-hud, .peak-info-card, .peak-strip-container, .welcome-overlay, .calibrator-panel, #btn-calibrator, .viewpoint-compass-widget')) {
+    if (e.target.closest('.museum-hud, .peak-info-card, .peak-strip-container, .welcome-overlay, .calibrator-panel, #btn-calibrator, .viewpoint-compass-widget, .screens-menu-overlay')) {
       return;
     }
 
@@ -1600,6 +1591,13 @@ function setupVRScreens() {
       if (evt && evt.stopPropagation) evt.stopPropagation();
       window.enterSceneFromPortal(s.id);
     });
+
+    planeEl.addEventListener('mouseenter', () => {
+      planeEl.setAttribute('animation', 'property: scale; to: 1.04 1.04 1.04; dur: 180; easing: easeOutQuad');
+    });
+    planeEl.addEventListener('mouseleave', () => {
+      planeEl.setAttribute('animation', 'property: scale; to: 1.0 1.0 1.0; dur: 180; easing: easeOutQuad');
+    });
   });
 }
 
@@ -1757,14 +1755,44 @@ function setupVRWelcomePanel() {
   planeEl.addEventListener('loaded', applyMesh);
   applyMesh();
 
+  const handleStart = (evt) => {
+    if (evt && evt.stopPropagation) evt.stopPropagation();
+    window.startExperience();
+  };
+  planeEl.addEventListener('click', handleStart);
   if (btnStartEl) {
-    btnStartEl.addEventListener('click', (evt) => {
-      if (evt && evt.stopPropagation) evt.stopPropagation();
-      window.startExperience();
-    });
+    btnStartEl.addEventListener('click', handleStart);
   }
 }
 
+
+window.previewVRInDesktop = function () {
+  AppState.flowState = 'screens_menu';
+  const modal = document.getElementById('welcome-modal');
+  const screensModal = document.getElementById('screens-menu-modal');
+  const vrWelcomePanel = document.getElementById('vr-welcome-panel');
+  const vrScreensMenu = document.getElementById('vr-screens-menu');
+  const sky = document.getElementById('sky-360');
+  const floorCompass = document.getElementById('vr-floor-compass-rig');
+  const hotspotsContainer = document.getElementById('hotspots-container');
+
+  if (modal) modal.classList.add('hidden');
+  if (screensModal) screensModal.classList.remove('visible');
+  if (vrWelcomePanel) vrWelcomePanel.setAttribute('visible', 'false');
+  if (sky) sky.setAttribute('visible', 'false');
+  if (floorCompass) floorCompass.setAttribute('visible', 'false');
+  if (hotspotsContainer) hotspotsContainer.setAttribute('visible', 'false');
+
+  window.mountainWind.stop();
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+
+  // Activar directamente el menú flotante 3D de realidad virtual en la pantalla del Mac
+  if (vrScreensMenu) {
+    vrScreensMenu.setAttribute('visible', 'true');
+  }
+};
 
 window.startExperience = function () {
   AppState.flowState = 'screens_menu';

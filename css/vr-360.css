@@ -449,7 +449,19 @@ body.a-scene-vr .viewpoint-compass-widget,
 }
 
 .screen-badge {
-  display: none !important;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(14, 22, 17, 0.88);
+  border: 1px solid var(--c-gold);
+  color: var(--c-gold);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  display: inline-block;
 }
 
 .screen-content {
@@ -477,12 +489,31 @@ body.a-scene-vr .viewpoint-compass-widget,
   font-size: 0.88rem;
   color: #C0C8C3;
   line-height: 1.5;
-  margin-bottom: 0;
+  margin-bottom: 16px;
   flex: 1;
 }
 
 .btn-screen-action {
-  display: none !important;
+  background: linear-gradient(135deg, var(--c-gold) 0%, #B8860B 100%);
+  color: #0F1712;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.3);
+  transition: all 0.2s ease;
+}
+
+.screen-card:hover .btn-screen-action {
+  background: linear-gradient(135deg, #FFE082 0%, var(--c-gold) 100%);
+  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.5);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 900px) {
