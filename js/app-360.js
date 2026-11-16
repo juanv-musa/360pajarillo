@@ -16,7 +16,7 @@ const AppState = {
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "1.3.3";
+const CURRENT_DATA_VERSION = "1.3.4";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
@@ -168,39 +168,15 @@ class MountainWind {
 window.mountainWind = new MountainWind();
 
 // ==============================================================================
-// LOCUCIÓN POR VOZ (Text-to-Speech con síntesis de voz en español)
+// LOCUCIÓN POR VOZ (Desactivada: solo viento ambiental)
 // ==============================================================================
 function speakPeak(peakData) {
-  if (!AppState.voiceEnabled || !('speechSynthesis' in window)) return;
-  const modal = document.getElementById('welcome-modal');
-  if (modal && !modal.classList.contains('hidden')) return;
-  try {
-    window.speechSynthesis.cancel();
-    const cleanElevation = (peakData.elevation || '').replace('m', 'metros');
-    let speechText = `${peakData.title}. ${cleanElevation}.`;
-    if (peakData.desc && peakData.desc.trim()) {
-      speechText += ` ${peakData.desc.trim()}`;
-    }
-    const utter = new SpeechSynthesisUtterance(speechText);
-    utter.lang = 'es-ES';
-    utter.rate = 0.95;
-    utter.pitch = 1.0;
-    window.speechSynthesis.speak(utter);
-  } catch (e) {
-    console.warn('TTS error:', e);
-  }
+  // Desactivado: solo sonido de viento en la experiencia
+  return;
 }
 
 window.toggleVoiceNarration = function () {
-  AppState.voiceEnabled = !AppState.voiceEnabled;
-  if (!AppState.voiceEnabled && ('speechSynthesis' in window)) {
-    window.speechSynthesis.cancel();
-  }
-  const btn = document.getElementById('btn-voice-toggle');
-  if (btn) {
-    btn.classList.toggle('active', AppState.voiceEnabled);
-    btn.textContent = AppState.voiceEnabled ? '🔊 Voz' : '🔇 Voz';
-  }
+  // No-op
 };
 
 // ==============================================================================
