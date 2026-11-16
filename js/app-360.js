@@ -16,7 +16,7 @@ const AppState = {
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "1.3.5";
+const CURRENT_DATA_VERSION = "1.3.6";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
@@ -645,16 +645,16 @@ AFRAME.registerComponent('peak-marker', {
     }
 
     el.peakMarkerComponent = this;
+    this.activeIntersections = 0;
     this.hideTimeout = null;
     this.closeTimer = null;
     this.autoDismissTimer = null;
 
-    // Conectar eventos a los elementos interactivos del hito
-    const interactiveItems = [el, this.hitbox, this.dot, this.stem, this.pillPlane];
-
-    const handleHover = () => {
+    const onEnter = () => {
       const modal = document.getElementById('welcome-modal');
       if (modal && !modal.classList.contains('hidden')) return;
+
+      this.activeIntersections++;
       if (this.autoDismissTimer) {
         clearTimeout(this.autoDismissTimer);
         this.autoDismissTimer = null;
@@ -666,28 +666,38 @@ AFRAME.registerComponent('peak-marker', {
       this.showPill(true);
     };
 
-    const handleLeave = () => {
-      if (this.hideTimeout) clearTimeout(this.hideTimeout);
-      this.hideTimeout = setTimeout(() => {
-        const sceneEl = document.querySelector('a-scene');
-        const isVR = (sceneEl && sceneEl.is('vr-mode')) || document.body.classList.contains('in-webxr');
+    const onLeave = () => {
+      this.activeIntersections = Math.max(0, this.activeIntersections - 1);
+      // Si la mirada o el puntero aún apunta a otra parte del hito (ej. pastilla o punto), mantener visible
+      if (this.activeIntersections > 0) return;
 
-        // En modo VR ocultar siempre al desviar la mirada para no bloquear la visibilidad de la sierra
-        if (isVR || !AppState.selectedPeak || AppState.selectedPeak.id !== data.id) {
-          this.showPill(false);
-          if (isVR && AppState.selectedPeak && AppState.selectedPeak.id === data.id) {
-            AppState.selectedPeak = null;
+      if (this.hideTimeout) clearTimeout(this.hideTimeout);
+
+      // Margen de 800ms para permitir lectura cómoda y movimiento natural de ojos sin parpadeos
+      this.hideTimeout = setTimeout(() => {
+        if (this.activeIntersections === 0) {
+          const sceneEl = document.querySelector('a-scene');
+          const isVR = (sceneEl && sceneEl.is('vr-mode')) || document.body.classList.contains('in-webxr');
+
+          if (isVR || !AppState.selectedPeak || AppState.selectedPeak.id !== data.id) {
+            this.showPill(false);
+            if (isVR && AppState.selectedPeak && AppState.selectedPeak.id === data.id) {
+              AppState.selectedPeak = null;
+            }
           }
         }
         this.hideTimeout = null;
-      }, 350);
+      }, 800);
     };
 
-    const handleClick = (evt) => {
+    const onClick = (evt) => {
       const modal = document.getElementById('welcome-modal');
       if (modal && !modal.classList.contains('hidden')) return;
       if (evt && evt.stopPropagation) evt.stopPropagation();
-      if (this.hideTimeout) clearTimeout(this.hideTimeout);
+      if (this.hideTimeout) {
+        clearTimeout(this.hideTimeout);
+        this.hideTimeout = null;
+      }
       window.selectPeak(data);
       this.showPill(true);
 
@@ -695,24 +705,27 @@ AFRAME.registerComponent('peak-marker', {
       const isVR = (sceneEl && sceneEl.is('vr-mode')) || document.body.classList.contains('in-webxr');
       if (isVR) {
         if (this.autoDismissTimer) clearTimeout(this.autoDismissTimer);
-        // Temporizador de seguridad: tras 4s se repliega si el usuario no ha apartado la vista
+        // En VR mantener la pastilla seleccionada 6 segundos
         this.autoDismissTimer = setTimeout(() => {
-          this.showPill(false);
-          if (AppState.selectedPeak && AppState.selectedPeak.id === data.id) {
-            AppState.selectedPeak = null;
+          if (this.activeIntersections === 0) {
+            this.showPill(false);
+            if (AppState.selectedPeak && AppState.selectedPeak.id === data.id) {
+              AppState.selectedPeak = null;
+            }
           }
           this.autoDismissTimer = null;
-        }, 4000);
+        }, 6000);
       }
     };
 
+    const interactiveItems = [this.hitbox, this.dot, this.pillPlane];
     interactiveItems.forEach(item => {
       if (!item) return;
-      item.addEventListener('mouseenter', handleHover);
-      item.addEventListener('raycaster-intersected', handleHover);
-      item.addEventListener('mouseleave', handleLeave);
-      item.addEventListener('raycaster-intersected-cleared', handleLeave);
-      item.addEventListener('click', handleClick);
+      item.addEventListener('mouseenter', onEnter);
+      item.addEventListener('raycaster-intersected', onEnter);
+      item.addEventListener('mouseleave', onLeave);
+      item.addEventListener('raycaster-intersected-cleared', onLeave);
+      item.addEventListener('click', onClick);
     });
   },
 
@@ -863,7 +876,9 @@ function renderPeakStrip(hotspots) {
 
 window.selectPeak = function (peakData) {
   document.querySelectorAll('.clickable').forEach(el => {
-    if (el.peakMarkerComponent) el.peakMarkerComponent.showPill(false);
+    if (el.peakMarkerComponent && el.id !== `peak-${peakData.id}`) {
+      el.peakMarkerComponent.showPill(false);
+    }
   });
 
   AppState.selectedPeak = peakData;
