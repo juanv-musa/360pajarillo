@@ -180,7 +180,7 @@ const SCENES_DATA = {
         "title": "El Yelmo",
         "elevation": "1.808 m",
         "yaw": -179.3,
-        "pitch": -7.4,
+        "pitch": 0.1,
         "desc": "El Yelmo es uno de los enclaves de referencia en España para la práctica del parapente y el vuelo libre"
       },
       {
