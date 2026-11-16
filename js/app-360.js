@@ -12,11 +12,11 @@ const AppState = {
   calibrationMode: false,
   currentYaw: 0,
   currentPitch: 0,
-  voiceEnabled: true,
+  voiceEnabled: false,
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "1.3.0";
+const CURRENT_DATA_VERSION = "1.3.1";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
@@ -172,6 +172,8 @@ window.mountainWind = new MountainWind();
 // ==============================================================================
 function speakPeak(peakData) {
   if (!AppState.voiceEnabled || !('speechSynthesis' in window)) return;
+  const modal = document.getElementById('welcome-modal');
+  if (modal && !modal.classList.contains('hidden')) return;
   try {
     window.speechSynthesis.cancel();
     const cleanElevation = (peakData.elevation || '').replace('m', 'metros');
@@ -728,12 +730,13 @@ AFRAME.registerComponent('peak-marker', {
     const interactiveItems = [el, this.hitbox, this.dot, this.stem, this.pillPlane];
 
     const handleHover = () => {
+      const modal = document.getElementById('welcome-modal');
+      if (modal && !modal.classList.contains('hidden')) return;
       if (this.hideTimeout) {
         clearTimeout(this.hideTimeout);
         this.hideTimeout = null;
       }
       this.showPill(true);
-      speakPeak(data);
     };
 
     const handleLeave = () => {
@@ -747,11 +750,12 @@ AFRAME.registerComponent('peak-marker', {
     };
 
     const handleClick = (evt) => {
+      const modal = document.getElementById('welcome-modal');
+      if (modal && !modal.classList.contains('hidden')) return;
       if (evt && evt.stopPropagation) evt.stopPropagation();
       if (this.hideTimeout) clearTimeout(this.hideTimeout);
       window.selectPeak(data);
       this.showPill(true);
-      speakPeak(data);
     };
 
     interactiveItems.forEach(item => {
