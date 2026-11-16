@@ -1420,6 +1420,8 @@ window.startExperience = function () {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (window.mountainWind) window.mountainWind.stop();
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   renderScene("magina");
   setupFloorCompass();
   setupNeveroFloorMarker();
