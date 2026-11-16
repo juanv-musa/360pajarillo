@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Sierra Mágina 360 · Visor de Cumbres</title>
 
-  <link rel="stylesheet" href="./css/vr-360.css?v=1.3.4">
+  <link rel="stylesheet" href="./css/vr-360.css?v=1.3.5">
 
   <!-- A-Frame WebXR Engine (v1.6.0) -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 
   <!-- Lógica y Base de Datos con Versionado Cache-Busting -->
-  <script src="./js/hotspots-data.js?v=1.3.4"></script>
-  <script src="./js/app-360.js?v=1.3.4"></script>
+  <script src="./js/hotspots-data.js?v=1.3.5"></script>
+  <script src="./js/app-360.js?v=1.3.5"></script>
 </head>
 <body>
 
@@ -45,6 +45,7 @@
 
     <div class="hud-actions">
       <button class="btn-hud active" id="btn-wind-toggle" title="Sonido ambiente de viento" onclick="window.mountainWind.toggle()">🍃 Viento</button>
+      <button class="btn-hud" id="btn-voice-toggle" title="Activar/desactivar locución de cumbres" onclick="window.toggleVoiceNarration()">🔇 Voz</button>
       <button class="btn-hud" id="btn-calibrator" onclick="window.toggleCalibrationMode()">Modo Calibrador</button>
       <button class="btn-hud-vr" onclick="window.enterVRMode()">Entrar en VR</button>
     </div>
@@ -196,6 +197,13 @@
                   raycaster="objects: .clickable"
                   visible="false">
         </a-entity>
+
+        <!-- Indicador de Salida al Menú en VR al mirar al suelo (5 segundos) -->
+        <a-entity id="vr-exit-gaze-hud" position="0 -0.32 -0.85" rotation="-15 0 0" visible="false">
+          <a-plane width="0.52" height="0.13" color="#0A1618" opacity="0.9" material="shader: flat; transparent: true; depthTest: false"></a-plane>
+          <a-text id="vr-exit-gaze-text" value="🏠 Salir al Menú en 5s..." align="center" width="1.2" color="#00C4D6" position="0 0.015 0.01"></a-text>
+          <a-ring id="vr-exit-gaze-ring" radius-inner="0.016" radius-outer="0.024" color="#00C4D6" position="0 -0.035 0.01" theta-length="0" material="shader: flat; depthTest: false"></a-ring>
+        </a-entity>
       </a-camera>
 
       <!-- Punteros láser para Meta Quest (Touch Plus Controllers) -->
@@ -214,20 +222,11 @@
 
     <!-- Contenedor para Modelo 3D Arquitectónico (Nevero de Piedra Seca en Realidad Mixta) -->
     <a-entity id="scene-3d-rig" position="0 0 0" visible="false">
-      <!-- Marca Holográfica de Anclaje en el Suelo Real (y = 0.02) -->
-      <a-entity id="nevero-floor-anchor" position="0 0.02 -3.0">
-        <a-plane id="nevero-ground-marker"
-                 rotation="-90 0 0"
-                 width="6.0"
-                 height="6.0"
-                 material="transparent: true; shader: flat; side: double; depthTest: true; opacity: 0.95"></a-plane>
-      </a-entity>
-
-      <!-- Modelo 3D del Nevero (Situado sobre la marca del suelo frente al usuario) -->
+      <!-- Modelo 3D del Nevero -->
       <a-entity id="nevero-3d-model" 
                 gltf-model="./assets/models/pozo_nevero_v1.glb" 
-                position="0 -0.15 -3.0" 
-                rotation="0 180 0" 
+                position="0 0 0" 
+                rotation="0 0 0" 
                 scale="1 1 1"></a-entity>
 
       <!-- Luces para destacar la textura de la piedra seca y la nieve -->

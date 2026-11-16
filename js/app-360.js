@@ -16,7 +16,7 @@ const AppState = {
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "1.3.4";
+const CURRENT_DATA_VERSION = "1.3.5";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
@@ -168,15 +168,39 @@ class MountainWind {
 window.mountainWind = new MountainWind();
 
 // ==============================================================================
-// LOCUCIÓN POR VOZ (Desactivada: solo viento ambiental)
+// LOCUCIÓN POR VOZ (Text-to-Speech con síntesis de voz en español)
 // ==============================================================================
 function speakPeak(peakData) {
-  // Desactivado: solo sonido de viento en la experiencia
-  return;
+  if (!AppState.voiceEnabled || !('speechSynthesis' in window)) return;
+  const modal = document.getElementById('welcome-modal');
+  if (modal && !modal.classList.contains('hidden')) return;
+  try {
+    window.speechSynthesis.cancel();
+    const cleanElevation = (peakData.elevation || '').replace('m', 'metros');
+    let speechText = `${peakData.title}. ${cleanElevation}.`;
+    if (peakData.desc && peakData.desc.trim()) {
+      speechText += ` ${peakData.desc.trim()}`;
+    }
+    const utter = new SpeechSynthesisUtterance(speechText);
+    utter.lang = 'es-ES';
+    utter.rate = 0.95;
+    utter.pitch = 1.0;
+    window.speechSynthesis.speak(utter);
+  } catch (e) {
+    console.warn('TTS error:', e);
+  }
 }
 
 window.toggleVoiceNarration = function () {
-  // No-op
+  AppState.voiceEnabled = !AppState.voiceEnabled;
+  if (!AppState.voiceEnabled && ('speechSynthesis' in window)) {
+    window.speechSynthesis.cancel();
+  }
+  const btn = document.getElementById('btn-voice-toggle');
+  if (btn) {
+    btn.classList.toggle('active', AppState.voiceEnabled);
+    btn.textContent = AppState.voiceEnabled ? '🔊 Voz' : '🔇 Voz';
+  }
 };
 
 // ==============================================================================
@@ -516,99 +540,21 @@ function setupFloorCompass() {
   updateFloorCompassRotation();
 }
 
-function createNeveroFloorMarkerCanvas() {
-  const size = 1024;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  const cx = size / 2;
-  const cy = size / 2;
-
-  ctx.clearRect(0, 0, size, size);
-
-  // 1. Resplandor radial exterior suave
-  const radGrad = ctx.createRadialGradient(cx, cy, 260, cx, cy, 490);
-  radGrad.addColorStop(0, 'rgba(0, 196, 214, 0.22)');
-  radGrad.addColorStop(0.7, 'rgba(0, 196, 214, 0.08)');
-  radGrad.addColorStop(1, 'rgba(0, 196, 214, 0)');
-  ctx.fillStyle = radGrad;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 490, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 2. Anillo noble dorado
-  ctx.strokeStyle = 'rgba(212, 175, 55, 0.85)';
-  ctx.lineWidth = 8;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 460, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // 3. Anillo punteado cian
-  ctx.save();
-  ctx.strokeStyle = '#00C4D6';
-  ctx.lineWidth = 4;
-  ctx.setLineDash([14, 12]);
-  ctx.beginPath();
-  ctx.arc(cx, cy, 430, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-
-  // 4. Marcas de orientación cada 45°
-  for (let a = 0; a < 360; a += 45) {
-    const rad = (a * Math.PI) / 180;
-    const isMain = a % 90 === 0;
-    const r1 = 430;
-    const r2 = isMain ? 400 : 415;
-    ctx.strokeStyle = isMain ? '#D4AF37' : '#00C4D6';
-    ctx.lineWidth = isMain ? 4 : 2;
-    ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(rad) * r1, cy + Math.sin(rad) * r1);
-    ctx.lineTo(cx + Math.cos(rad) * r2, cy + Math.sin(rad) * r2);
-    ctx.stroke();
-  }
-
-  // 5. Círculo interior
-  ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 370, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // 6. Textos informativos de suelo
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('❄️ POZO DE NIEVE DE SIERRA MÁGINA (2.100 m) · ARQUITECTURA DE PIEDRA SECA', cx, cy - 395);
-
-  ctx.fillStyle = '#00F0FF';
-  ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('👣 ZONA DE EXPLORACIÓN REALIDAD MIXTA · CAMINA ALREDEDOR EN 360°', cx, cy + 395);
-
-  return canvas;
-}
-
-function setupNeveroFloorMarker() {
-  const planeEl = document.getElementById('nevero-ground-marker');
-  if (!planeEl) return;
-
-  const canvas = createNeveroFloorMarkerCanvas();
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = false;
-
-  const applyTexture = () => {
-    const mesh = planeEl.getObject3D('mesh');
-    if (mesh && mesh.material) {
-      mesh.material.map = texture;
-      mesh.material.needsUpdate = true;
-    }
+function setupNevero3DModel() {
+  const modelEl = document.getElementById('nevero-3d-model');
+  if (!modelEl) return;
+  const hideDirt = () => {
+    const mesh = modelEl.getObject3D('mesh');
+    if (!mesh) return;
+    mesh.traverse((child) => {
+      // Quitar la capa de tierra que cubre la boca del pozo (Cubo.018 con Material.006)
+      if (child.name === 'Cubo.018' || child.name === 'Cubo.009' || (child.material && child.material.name === 'Material.006')) {
+        child.visible = false;
+      }
+    });
   };
-
-  planeEl.addEventListener('loaded', applyTexture);
-  applyTexture();
+  modelEl.addEventListener('model-loaded', hideDirt);
+  hideDirt();
 }
 
 function updateFloorCompassRotation() {
@@ -842,14 +788,25 @@ function renderScene(sceneId) {
   const scene3dRig = document.getElementById('scene-3d-rig');
   const floorCompassRig = document.getElementById('vr-floor-compass-rig');
   const container = document.getElementById('hotspots-container');
+  const cameraRig = document.getElementById('camera-rig');
+  const model3d = document.getElementById('nevero-3d-model');
 
   if (sceneData.is3DModel) {
     if (scene3dRig) scene3dRig.setAttribute('visible', 'true');
     if (floorCompassRig) floorCompassRig.setAttribute('visible', 'false');
-    // En Passthrough / Realidad Mixta el cielo se oculta para ver el entorno real de la sala
-    if (sky) {
-      sky.setAttribute('visible', 'false');
+    if (sky) sky.setAttribute('visible', 'false');
+
+    // Situar la cámara en la esquina donde el usuario colocó la cámara en Blender
+    // Coordenadas Blender: (7.36, -6.93, 4.96) => Three.js / A-Frame: (7.36, 4.96, 6.93)
+    if (cameraRig) {
+      cameraRig.setAttribute('position', '7.36 4.96 6.93');
     }
+    if (model3d) {
+      model3d.setAttribute('position', '0 0 0');
+      model3d.setAttribute('rotation', '0 0 0');
+    }
+    // Orientar la vista hacia el centro del pozo (0, 0, 0)
+    window.lookAtPeak(-133.3, -26.1);
   } else {
     if (scene3dRig) scene3dRig.setAttribute('visible', 'false');
     if (floorCompassRig) floorCompassRig.setAttribute('visible', 'true');
@@ -857,6 +814,9 @@ function renderScene(sceneId) {
       sky.setAttribute('src', sceneData.image);
       sky.setAttribute('rotation', sceneData.skyRotation || "0 0 0");
       sky.setAttribute('visible', 'true');
+    }
+    if (cameraRig) {
+      cameraRig.setAttribute('position', '0 1.6 0');
     }
   }
 
@@ -870,8 +830,7 @@ function renderScene(sceneId) {
     const entity = document.createElement('a-entity');
     entity.setAttribute('id', `peak-${hs.id}`);
     if (sceneData.is3DModel) {
-      // Centrar los hitos cerca de la boca del pozo
-      entity.setAttribute('position', `${pos.x} ${pos.y + 0.4} ${pos.z - 3.0}`);
+      entity.setAttribute('position', `${pos.x} ${pos.y + 0.4} ${pos.z}`);
     } else {
       entity.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
     }
@@ -1202,6 +1161,20 @@ window.SCENES_DATA = SCENES_DATA;
 // ==============================================================================
 // BUCLE DE ORIENTACIÓN, BRÚJULA DINÁMICA Y CALIBRACIÓN
 // ==============================================================================
+let vrFloorLookStartTime = null;
+const VR_FLOOR_EXIT_MS = 5000;
+
+window.exitVRToMenu = function () {
+  const sceneEl = document.querySelector('a-scene');
+  if (sceneEl && sceneEl.exitVR) {
+    sceneEl.exitVR();
+  }
+  const modal = document.getElementById('welcome-modal');
+  if (modal) modal.classList.remove('hidden');
+  if (window.mountainWind) window.mountainWind.stop();
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+};
+
 function updateCameraOrientationLoop() {
   const cam = document.getElementById('head-camera');
   if (cam && cam.components && cam.components['look-controls']) {
@@ -1215,6 +1188,33 @@ function updateCameraOrientationLoop() {
 
       AppState.currentYaw = Math.round(yaw * 10) / 10;
       AppState.currentPitch = Math.round(pitch * 10) / 10;
+
+      // Salida al menú en modo VR al mirar al suelo durante 5 segundos
+      const sceneEl = document.querySelector('a-scene');
+      const isVR = (sceneEl && sceneEl.is('vr-mode')) || document.body.classList.contains('in-webxr');
+      const exitHud = document.getElementById('vr-exit-gaze-hud');
+      const exitText = document.getElementById('vr-exit-gaze-text');
+      const exitRing = document.getElementById('vr-exit-gaze-ring');
+
+      if (isVR && pitch <= -55) {
+        if (!vrFloorLookStartTime) vrFloorLookStartTime = performance.now();
+        const elapsed = performance.now() - vrFloorLookStartTime;
+        const remainingSec = Math.max(1, Math.ceil((VR_FLOOR_EXIT_MS - elapsed) / 1000));
+        const progressRatio = Math.min(1.0, elapsed / VR_FLOOR_EXIT_MS);
+
+        if (exitHud) exitHud.setAttribute('visible', 'true');
+        if (exitText) exitText.setAttribute('value', `🏠 Salir al Menú en ${remainingSec}s...`);
+        if (exitRing) exitRing.setAttribute('theta-length', Math.round(progressRatio * 360));
+
+        if (elapsed >= VR_FLOOR_EXIT_MS) {
+          vrFloorLookStartTime = null;
+          if (exitHud) exitHud.setAttribute('visible', 'false');
+          window.exitVRToMenu();
+        }
+      } else {
+        vrFloorLookStartTime = null;
+        if (exitHud) exitHud.setAttribute('visible', 'false');
+      }
 
       // Cálculo del rumbo respecto al Norte de la escena
       const sceneData = window.LIVE_SCENES[AppState.currentSceneId] || {};
@@ -1400,7 +1400,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   renderScene("magina");
   setupFloorCompass();
-  setupNeveroFloorMarker();
+  setupNevero3DModel();
   updateCameraOrientationLoop();
   setupCursorMode();
   setupDesktopMouseInteractions();
