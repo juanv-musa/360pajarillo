@@ -31,6 +31,19 @@ body, html {
 }
 
 /* ==========================================================================
+   SOPORTE WEBXR PASSTHROUGH (REALIDAD MIXTA TRANSPARENTE EN META QUEST)
+   ========================================================================== */
+body.in-webxr,
+body.in-webxr html,
+html.a-html,
+body.a-body,
+.a-scene-vr,
+.a-canvas {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* ==========================================================================
    BARRA SUPERIOR (MUSEUM HUD)
    ========================================================================== */
 .museum-hud {

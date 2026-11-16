@@ -16,13 +16,13 @@ const AppState = {
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "1.2.0";
+const CURRENT_DATA_VERSION = "1.3.0";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
   try {
     const savedVer = localStorage.getItem('sierra_magina_dataset_version');
-    // Si la versión guardada en el navegador es anterior a la oficial (1.2.0),
+    // Si la versión guardada en el navegador es anterior a la oficial (1.3.0),
     // actualizar automáticamente el localStorage con todos los datos oficiales
     if (savedVer !== CURRENT_DATA_VERSION) {
       localStorage.setItem('sierra_magina_360_hotspots', JSON.stringify(defaultData));
@@ -538,6 +538,101 @@ function setupFloorCompass() {
   updateFloorCompassRotation();
 }
 
+function createNeveroFloorMarkerCanvas() {
+  const size = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cx = size / 2;
+  const cy = size / 2;
+
+  ctx.clearRect(0, 0, size, size);
+
+  // 1. Resplandor radial exterior suave
+  const radGrad = ctx.createRadialGradient(cx, cy, 260, cx, cy, 490);
+  radGrad.addColorStop(0, 'rgba(0, 196, 214, 0.22)');
+  radGrad.addColorStop(0.7, 'rgba(0, 196, 214, 0.08)');
+  radGrad.addColorStop(1, 'rgba(0, 196, 214, 0)');
+  ctx.fillStyle = radGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 490, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Anillo noble dorado
+  ctx.strokeStyle = 'rgba(212, 175, 55, 0.85)';
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 460, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 3. Anillo punteado cian
+  ctx.save();
+  ctx.strokeStyle = '#00C4D6';
+  ctx.lineWidth = 4;
+  ctx.setLineDash([14, 12]);
+  ctx.beginPath();
+  ctx.arc(cx, cy, 430, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 4. Marcas de orientación cada 45°
+  for (let a = 0; a < 360; a += 45) {
+    const rad = (a * Math.PI) / 180;
+    const isMain = a % 90 === 0;
+    const r1 = 430;
+    const r2 = isMain ? 400 : 415;
+    ctx.strokeStyle = isMain ? '#D4AF37' : '#00C4D6';
+    ctx.lineWidth = isMain ? 4 : 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(rad) * r1, cy + Math.sin(rad) * r1);
+    ctx.lineTo(cx + Math.cos(rad) * r2, cy + Math.sin(rad) * r2);
+    ctx.stroke();
+  }
+
+  // 5. Círculo interior
+  ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 370, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 6. Textos informativos de suelo
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('❄️ POZO DE NIEVE DE SIERRA MÁGINA (2.100 m) · ARQUITECTURA DE PIEDRA SECA', cx, cy - 395);
+
+  ctx.fillStyle = '#00F0FF';
+  ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('👣 ZONA DE EXPLORACIÓN REALIDAD MIXTA · CAMINA ALREDEDOR EN 360°', cx, cy + 395);
+
+  return canvas;
+}
+
+function setupNeveroFloorMarker() {
+  const planeEl = document.getElementById('nevero-ground-marker');
+  if (!planeEl) return;
+
+  const canvas = createNeveroFloorMarkerCanvas();
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+
+  const applyTexture = () => {
+    const mesh = planeEl.getObject3D('mesh');
+    if (mesh && mesh.material) {
+      mesh.material.map = texture;
+      mesh.material.needsUpdate = true;
+    }
+  };
+
+  planeEl.addEventListener('loaded', applyTexture);
+  applyTexture();
+}
+
 function updateFloorCompassRotation() {
   const rigEl = document.getElementById('vr-floor-compass-rig');
   if (!rigEl) return;
@@ -740,23 +835,46 @@ function renderScene(sceneId) {
   if (vpAlt) vpAlt.textContent = sceneData.altitude;
 
   const sky = document.getElementById('sky-360');
-  sky.setAttribute('src', sceneData.image);
-  sky.setAttribute('rotation', sceneData.skyRotation || "0 0 0");
-
+  const scene3dRig = document.getElementById('scene-3d-rig');
+  const floorCompassRig = document.getElementById('vr-floor-compass-rig');
   const container = document.getElementById('hotspots-container');
-  while (container.firstChild) {
+
+  if (sceneData.is3DModel) {
+    if (scene3dRig) scene3dRig.setAttribute('visible', 'true');
+    if (floorCompassRig) floorCompassRig.setAttribute('visible', 'false');
+    // En Passthrough / Realidad Mixta el cielo se oculta para ver el entorno real de la sala
+    if (sky) {
+      sky.setAttribute('visible', 'false');
+    }
+  } else {
+    if (scene3dRig) scene3dRig.setAttribute('visible', 'false');
+    if (floorCompassRig) floorCompassRig.setAttribute('visible', 'true');
+    if (sky) {
+      sky.setAttribute('src', sceneData.image);
+      sky.setAttribute('rotation', sceneData.skyRotation || "0 0 0");
+      sky.setAttribute('visible', 'true');
+    }
+  }
+
+  while (container && container.firstChild) {
     container.removeChild(container.firstChild);
   }
 
+  const hotspotDistance = sceneData.is3DModel ? 3.5 : 14.0;
   sceneData.hotspots.forEach(hs => {
-    const pos = sphericalToCartesian(hs.yaw, hs.pitch, 14.0);
+    const pos = sphericalToCartesian(hs.yaw, hs.pitch, hotspotDistance);
     const entity = document.createElement('a-entity');
     entity.setAttribute('id', `peak-${hs.id}`);
-    entity.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+    if (sceneData.is3DModel) {
+      // Centrar los hitos cerca de la boca del pozo
+      entity.setAttribute('position', `${pos.x} ${pos.y + 0.4} ${pos.z - 3.0}`);
+    } else {
+      entity.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+    }
     entity.setAttribute('look-at-camera', '');
     entity.setAttribute('peak-marker', hs);
     entity.setAttribute('class', 'clickable');
-    container.appendChild(entity);
+    if (container) container.appendChild(entity);
   });
 
   renderPeakStrip(sceneData.hotspots);
@@ -1231,24 +1349,52 @@ function setupCursorMode() {
 
     sceneEl.addEventListener('enter-vr', () => {
       gaze.setAttribute('visible', 'true');
+      document.body.classList.add('in-webxr');
+      if (sceneEl.renderer) {
+        sceneEl.renderer.setClearColor(0x000000, 0);
+        sceneEl.renderer.setClearAlpha(0);
+      }
     });
 
     sceneEl.addEventListener('exit-vr', () => {
       gaze.setAttribute('visible', 'false');
+      document.body.classList.remove('in-webxr');
     });
   }
 }
 
+window.enterVRMode = async function () {
+  const sceneEl = document.querySelector('a-scene');
+  if (!sceneEl) return;
+
+  if (navigator.xr && navigator.xr.isSessionSupported) {
+    try {
+      const arSupported = await navigator.xr.isSessionSupported('immersive-ar');
+      if (arSupported && typeof sceneEl.enterAR === 'function') {
+        console.log('[WebXR] Solicitando sesión inmersiva AR con Passthrough...');
+        await sceneEl.enterAR();
+        return;
+      }
+    } catch (err) {
+      console.warn('[WebXR] Fallback a VR tras intento AR:', err);
+    }
+  }
+
+  if (sceneEl.enterVR) {
+    sceneEl.enterVR();
+  }
+};
+
 window.startExperience = function () {
   const modal = document.getElementById('welcome-modal');
   if (modal) modal.classList.add('hidden');
-  // Iniciar sonido de viento relajante al comenzar
   window.mountainWind.start();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
   renderScene("magina");
   setupFloorCompass();
+  setupNeveroFloorMarker();
   updateCameraOrientationLoop();
   setupCursorMode();
   setupDesktopMouseInteractions();
