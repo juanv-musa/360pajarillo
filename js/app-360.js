@@ -16,7 +16,7 @@ const AppState = {
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "1.3.1";
+const CURRENT_DATA_VERSION = "1.3.2";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
@@ -725,6 +725,7 @@ AFRAME.registerComponent('peak-marker', {
     el.peakMarkerComponent = this;
     this.hideTimeout = null;
     this.closeTimer = null;
+    this.autoDismissTimer = null;
 
     // Conectar eventos a los elementos interactivos del hito
     const interactiveItems = [el, this.hitbox, this.dot, this.stem, this.pillPlane];
@@ -732,6 +733,10 @@ AFRAME.registerComponent('peak-marker', {
     const handleHover = () => {
       const modal = document.getElementById('welcome-modal');
       if (modal && !modal.classList.contains('hidden')) return;
+      if (this.autoDismissTimer) {
+        clearTimeout(this.autoDismissTimer);
+        this.autoDismissTimer = null;
+      }
       if (this.hideTimeout) {
         clearTimeout(this.hideTimeout);
         this.hideTimeout = null;
@@ -742,11 +747,18 @@ AFRAME.registerComponent('peak-marker', {
     const handleLeave = () => {
       if (this.hideTimeout) clearTimeout(this.hideTimeout);
       this.hideTimeout = setTimeout(() => {
-        if (!AppState.selectedPeak || AppState.selectedPeak.id !== data.id) {
+        const sceneEl = document.querySelector('a-scene');
+        const isVR = (sceneEl && sceneEl.is('vr-mode')) || document.body.classList.contains('in-webxr');
+
+        // En modo VR ocultar siempre al desviar la mirada para no bloquear la visibilidad de la sierra
+        if (isVR || !AppState.selectedPeak || AppState.selectedPeak.id !== data.id) {
           this.showPill(false);
+          if (isVR && AppState.selectedPeak && AppState.selectedPeak.id === data.id) {
+            AppState.selectedPeak = null;
+          }
         }
         this.hideTimeout = null;
-      }, 300);
+      }, 350);
     };
 
     const handleClick = (evt) => {
@@ -756,6 +768,20 @@ AFRAME.registerComponent('peak-marker', {
       if (this.hideTimeout) clearTimeout(this.hideTimeout);
       window.selectPeak(data);
       this.showPill(true);
+
+      const sceneEl = document.querySelector('a-scene');
+      const isVR = (sceneEl && sceneEl.is('vr-mode')) || document.body.classList.contains('in-webxr');
+      if (isVR) {
+        if (this.autoDismissTimer) clearTimeout(this.autoDismissTimer);
+        // Temporizador de seguridad: tras 4s se repliega si el usuario no ha apartado la vista
+        this.autoDismissTimer = setTimeout(() => {
+          this.showPill(false);
+          if (AppState.selectedPeak && AppState.selectedPeak.id === data.id) {
+            AppState.selectedPeak = null;
+          }
+          this.autoDismissTimer = null;
+        }, 4000);
+      }
     };
 
     interactiveItems.forEach(item => {
@@ -793,9 +819,7 @@ AFRAME.registerComponent('peak-marker', {
         easing: 'easeInQuad'
       });
       this.closeTimer = setTimeout(() => {
-        if (!AppState.selectedPeak || AppState.selectedPeak.id !== this.data.id) {
-          this.popup.setAttribute('visible', 'false');
-        }
+        this.popup.setAttribute('visible', 'false');
         this.closeTimer = null;
       }, 160);
       if (this.dot) this.dot.setAttribute('material', 'color: #FFFFFF; opacity: 0.95');
