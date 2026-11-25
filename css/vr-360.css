@@ -980,3 +980,76 @@ body.a-scene-vr .viewpoint-compass-widget,
   background: #E63C3C;
   color: #FFFFFF;
 }
+
+/* ==========================================================================
+   MODO VISITANTE META QUEST: SELECTOR DIRECTO DE LAS 3 EXPERIENCIAS EN PORTADA
+   ========================================================================== */
+.welcome-card-visitor {
+  max-width: 780px !important;
+  width: 92% !important;
+}
+
+.visitor-scene-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 22px 0 18px 0;
+}
+
+.btn-visitor-scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  text-align: center;
+}
+
+.btn-visitor-scene:hover,
+.btn-visitor-scene:focus {
+  transform: translateY(-3px);
+  background: rgba(0, 196, 214, 0.18);
+  border-color: #00C4D6;
+  box-shadow: 0 8px 24px rgba(0, 196, 214, 0.22);
+}
+
+.btn-visitor-scene-highlight {
+  border-color: rgba(212, 175, 55, 0.65);
+  background: rgba(212, 175, 55, 0.14);
+}
+
+.btn-visitor-scene-highlight:hover,
+.btn-visitor-scene-highlight:focus {
+  background: rgba(212, 175, 55, 0.28);
+  border-color: #D4AF37;
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.28);
+}
+
+.visitor-scene-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.visitor-scene-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.visitor-scene-sub {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+@media (max-width: 680px) {
+  .visitor-scene-grid {
+    grid-template-columns: 1fr;
+  }
+}

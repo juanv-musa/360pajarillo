@@ -16,7 +16,7 @@ const AppState = {
   windEnabled: false
 };
 
-const CURRENT_DATA_VERSION = "1.3.6";
+const CURRENT_DATA_VERSION = "1.4.4";
 
 function getLiveScenesData() {
   const defaultData = JSON.parse(JSON.stringify(window.SCENES_DATA));
@@ -802,34 +802,44 @@ function renderScene(sceneId) {
   const floorCompassRig = document.getElementById('vr-floor-compass-rig');
   const container = document.getElementById('hotspots-container');
   const cameraRig = document.getElementById('camera-rig');
-  const model3d = document.getElementById('nevero-3d-model');
+  const pajarillo3d = document.getElementById('pajarillo-3d-model');
+  const sceneEl = document.querySelector('a-scene');
+  const isInVR = (sceneEl && sceneEl.is('vr-mode')) || document.body.classList.contains('in-webxr');
 
   if (sceneData.is3DModel) {
     if (scene3dRig) scene3dRig.setAttribute('visible', 'true');
     if (floorCompassRig) floorCompassRig.setAttribute('visible', 'false');
     if (sky) sky.setAttribute('visible', 'false');
 
-    // Situar la cámara en la esquina donde el usuario colocó la cámara en Blender
-    // Coordenadas Blender: (7.36, -6.93, 4.96) => Three.js / A-Frame: (7.36, 4.96, 6.93)
+    if (pajarillo3d) {
+      pajarillo3d.setAttribute('visible', 'true');
+      pajarillo3d.setAttribute('position', '0 0 -2.8');
+      pajarillo3d.setAttribute('rotation', '0 0 0');
+    }
+    // En VR (local-floor) el suelo real es Y=0; en escritorio la vista está a 1.55m
     if (cameraRig) {
-      cameraRig.setAttribute('position', '7.36 4.96 6.93');
+      cameraRig.setAttribute('position', isInVR ? '0 0 0' : '0 1.55 0');
     }
-    if (model3d) {
-      model3d.setAttribute('position', '0 0 0');
-      model3d.setAttribute('rotation', '0 0 0');
-    }
-    // Orientar la vista hacia el centro del pozo (0, 0, 0)
-    window.lookAtPeak(-133.3, -26.1);
+    window.lookAtPeak(0, -6);
   } else {
     if (scene3dRig) scene3dRig.setAttribute('visible', 'false');
+    if (pajarillo3d) pajarillo3d.setAttribute('visible', 'false');
     if (floorCompassRig) floorCompassRig.setAttribute('visible', 'true');
     if (sky) {
-      sky.setAttribute('src', sceneData.image);
+      const skyAssetId = (sceneId === 'miramundos') ? '#img-360-miramundos' : '#img-360-magina';
+      sky.setAttribute('material', {
+        src: skyAssetId,
+        shader: 'flat',
+        side: 'back',
+        transparent: false,
+        opacity: 1
+      });
       sky.setAttribute('rotation', sceneData.skyRotation || "0 0 0");
       sky.setAttribute('visible', 'true');
     }
     if (cameraRig) {
-      cameraRig.setAttribute('position', '0 1.6 0');
+      // En VR (local-floor) el suelo real ya es Y=0 y la cabeza está a ~1.6m; en escritorio usar Y=1.6m
+      cameraRig.setAttribute('position', isInVR ? '0 0 0' : '0 1.6 0');
     }
   }
 
@@ -837,12 +847,15 @@ function renderScene(sceneId) {
     container.removeChild(container.firstChild);
   }
 
-  const hotspotDistance = sceneData.is3DModel ? 3.5 : 14.0;
+  const hotspotDistance = (sceneId === 'pajarillo') ? 2.5 : (sceneData.is3DModel ? 3.5 : 14.0);
   sceneData.hotspots.forEach(hs => {
     const pos = sphericalToCartesian(hs.yaw, hs.pitch, hotspotDistance);
     const entity = document.createElement('a-entity');
     entity.setAttribute('id', `peak-${hs.id}`);
-    if (sceneData.is3DModel) {
+    if (sceneId === 'pajarillo') {
+      entity.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+      entity.setAttribute('scale', '0.24 0.24 0.24');
+    } else if (sceneData.is3DModel) {
       entity.setAttribute('position', `${pos.x} ${pos.y + 0.4} ${pos.z}`);
     } else {
       entity.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
@@ -856,6 +869,20 @@ function renderScene(sceneId) {
   renderPeakStrip(sceneData.hotspots);
   renderCalibratorList();
   window.closePeakCard();
+  syncWindAudio();
+}
+
+function syncWindAudio() {
+  if (!window.mountainWind) return;
+  const sceneEl = document.querySelector('a-scene');
+  const isInVR = (sceneEl && sceneEl.is('vr-mode')) || document.body.classList.contains('in-webxr');
+  const is360Panorama = (AppState.currentSceneId === 'magina' || AppState.currentSceneId === 'miramundos');
+
+  if (isInVR && is360Panorama) {
+    if (!AppState.windEnabled) window.mountainWind.start();
+  } else {
+    if (AppState.windEnabled) window.mountainWind.stop();
+  }
 }
 
 function renderPeakStrip(hotspots) {
@@ -1369,45 +1396,58 @@ function setupCursorMode() {
     sceneEl.addEventListener('enter-vr', () => {
       gaze.setAttribute('visible', 'true');
       document.body.classList.add('in-webxr');
+      const cameraRig = document.getElementById('camera-rig');
+      if (cameraRig) cameraRig.setAttribute('position', '0 0 0');
       if (sceneEl.renderer) {
         sceneEl.renderer.setClearColor(0x000000, 0);
         sceneEl.renderer.setClearAlpha(0);
       }
+      syncWindAudio();
     });
 
     sceneEl.addEventListener('exit-vr', () => {
       gaze.setAttribute('visible', 'false');
       document.body.classList.remove('in-webxr');
+      const cameraRig = document.getElementById('camera-rig');
+      if (cameraRig) cameraRig.setAttribute('position', AppState.currentSceneId === 'pajarillo' ? '0 1.55 0' : '0 1.6 0');
+      syncWindAudio();
     });
   }
 }
 
-window.enterVRMode = async function () {
+window._xrArSupported = false;
+window._xrVrSupported = false;
+if (navigator.xr && navigator.xr.isSessionSupported) {
+  navigator.xr.isSessionSupported('immersive-ar').then(ok => { window._xrArSupported = !!ok; }).catch(() => {});
+  navigator.xr.isSessionSupported('immersive-vr').then(ok => { window._xrVrSupported = !!ok; }).catch(() => {});
+}
+
+window.enterVRMode = function () {
   const sceneEl = document.querySelector('a-scene');
   if (!sceneEl) return;
 
-  if (navigator.xr && navigator.xr.isSessionSupported) {
-    try {
-      const arSupported = await navigator.xr.isSessionSupported('immersive-ar');
-      if (arSupported && typeof sceneEl.enterAR === 'function') {
-        console.log('[WebXR] Solicitando sesión inmersiva AR con Passthrough...');
-        await sceneEl.enterAR();
-        return;
-      }
-    } catch (err) {
-      console.warn('[WebXR] Fallback a VR tras intento AR:', err);
+  // Llamada SÍNCRONA directa dentro del clic del usuario (sin await previo) para que Meta Quest no bloquee WebXR
+  const wantsPassthrough = (AppState.currentSceneId === 'pajarillo');
+  if (wantsPassthrough && window._xrArSupported && typeof sceneEl.enterAR === 'function') {
+    const p = sceneEl.enterAR();
+    if (p && typeof p.catch === 'function') {
+      p.catch(() => { if (sceneEl.enterVR) sceneEl.enterVR(); });
     }
+    return;
   }
 
-  if (sceneEl.enterVR) {
-    sceneEl.enterVR();
+  if (typeof sceneEl.enterVR === 'function') {
+    const p = sceneEl.enterVR();
+    if (p && typeof p.catch === 'function') {
+      p.catch(err => console.warn('[WebXR] Error entrando en VR:', err));
+    }
   }
 };
 
 window.startExperience = function () {
   const modal = document.getElementById('welcome-modal');
   if (modal) modal.classList.add('hidden');
-  window.mountainWind.start();
+  syncWindAudio();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1419,4 +1459,38 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCameraOrientationLoop();
   setupCursorMode();
   setupDesktopMouseInteractions();
+
+  // Registro de Service Worker para modo 100% offline en Meta Quest 3S (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js').then(() => {
+      console.log('[PWA Offline] Service Worker registrado para Meta Quest 3S');
+    }).catch(err => {
+      console.warn('[PWA Offline] Aviso registrando Service Worker:', err);
+    });
+  }
 });
+
+// ==============================================================================
+// MODO VISITANTE BLINDADO (META QUEST 3S · CERO CONFIGURACIÓN / CALIBRACIÓN)
+// ==============================================================================
+window.toggleCalibrationMode = function () {};
+window.promptCalibrateCompass = function () {};
+window.setCompassHeadingForCurrentView = function () {};
+window.addHotspotAtCurrentView = function () {};
+window.clearAllHotspots = function () {};
+window.editPeak = function () {};
+window.deletePeak = function () {};
+window.nudgePeakPitch = function () {};
+
+window.startVisitorScene = function (sceneId) {
+  const modal = document.getElementById('welcome-modal');
+  if (modal) modal.classList.add('hidden');
+
+  renderScene(sceneId);
+
+  // Llamada síncrona inmediata para conservar el gesto del usuario en Meta Quest Browser
+  if (window._xrArSupported || window._xrVrSupported) {
+    window.enterVRMode();
+  }
+  syncWindAudio();
+};

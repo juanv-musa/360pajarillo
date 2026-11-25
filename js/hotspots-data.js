@@ -241,41 +241,17 @@ const SCENES_DATA = {
       }
     ]
   },
-  "nevero": {
-    "id": "nevero",
-    "name": "Nevero de Piedra Seca",
-    "shortName": "Nevero 3D",
-    "altitude": "2.100 m",
+  "pajarillo": {
+    "id": "pajarillo",
+    "name": "Santuario Heroico de El Pajarillo",
+    "shortName": "El Pajarillo 3D",
+    "altitude": "Siglo IV a.n.e.",
     "baseHeading": 0,
     "is3DModel": true,
-    "image": "assets/images/nevero_piedra_seca.jpg",
+    "modelId": "pajarillo-3d-model",
+    "image": "assets/images/logo-pajarillo-white.png",
     "skyRotation": "0 0 0",
-    "hotspots": [
-      {
-        "id": "nevero-boca",
-        "title": "Boca del Pozo",
-        "elevation": "2.100 m",
-        "yaw": 0,
-        "pitch": -22,
-        "desc": "Construcción tradicional de piedra seca sin mortero. Diámetro exterior aproximado de 10 metros sobre el anfiteatro kárstico de Sierra Mágina."
-      },
-      {
-        "id": "nevero-nieve",
-        "title": "Capas de Nieve y Hielo",
-        "elevation": "-3.5 m fondo",
-        "yaw": 24,
-        "pitch": -36,
-        "desc": "La nieve recogida durante el invierno se prensaba en capas alternas de paja para abastecer de hielo a los pueblos durante el verano."
-      },
-      {
-        "id": "nevero-cupula",
-        "title": "Técnica de Falsa Cúpula",
-        "elevation": "Patrimonio UNESCO",
-        "yaw": -24,
-        "pitch": -14,
-        "desc": "Aproximación sucesiva de hiladas de lajas de piedra caliza, técnica constructiva ancestral reconocida como Patrimonio Cultural Inmaterial."
-      }
-    ]
+    "hotspots": []
   }
 };
 

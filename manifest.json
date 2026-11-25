@@ -1,0 +1,19 @@
+{
+  "name": "Sierra Mágina 360° y Santuario de El Pajarillo VR",
+  "short_name": "El Pajarillo VR",
+  "description": "Visor inmersivo 360° de Sierra Mágina y conjunto escultórico 3D del Santuario Heroico de El Pajarillo para Meta Quest 3S",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#050806",
+  "theme_color": "#0A1618",
+  "icons": [
+    {
+      "src": "./assets/images/logo-pajarillo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "museum", "history"]
+}
